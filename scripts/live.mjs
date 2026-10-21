@@ -76,19 +76,25 @@ function cli(args, opts = {}) {
   return { code: r.status, out: (r.stdout || "") + "", err: (r.stderr || "") + "" };
 }
 
+function jsLiteralToJson(text) {
+  // The CLI prints JS object literals: bare keys, single-quoted values.
+  const candidates = [...text.matchAll(/\{[\s\S]*\}/g)].map((m) => m[0]);
+  for (const candidate of candidates) {
+    const normalized = candidate
+      .replace(/'([^']*)'/g, '"$1"')
+      .replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":');
+    try { return JSON.parse(normalized); } catch { /* keep looking */ }
+  }
+  return null;
+}
+
 function parseJsonLoose(text) {
   const candidates = [...text.matchAll(/\{[\s\S]*\}/g)].map((m) => m[0]);
   for (const candidate of candidates) {
     try { return JSON.parse(candidate); } catch { /* keep looking */ }
   }
-  // The genlayer CLI prints JS object literals (single quotes). Convert the
-  // whole block and try again; if any value contains an apostrophe the
-  // conversion is wrong, parse fails, and the caller falls back to raw text.
-  for (const candidate of candidates) {
-    const normalized = candidate.replace(/'/g, '"');
-    try { return JSON.parse(normalized); } catch { /* keep looking */ }
-  }
-  return null;
+  // Then try the JS-literal normalization above.
+  return jsLiteralToJson(text);
 }
 
 const steps = [];
@@ -133,12 +139,17 @@ function writeTx(contract, method, args) {
     "--retries", String(wait_defaults.retries),
     "--rpc", RPC]);
   const waitReceipt = parseJsonLoose(waited.out + "\n" + waited.err) || {};
-  const blob = JSON.stringify(waitReceipt) + waited.out + waited.err;
+  // Failure detection runs over BOTH the receipt JSON and the raw CLI text
+  // (the CLI prints JS literals, so error markers come in single quotes).
+  const blob = (JSON.stringify(waitReceipt) + waited.out + waited.err)
+    .replace(/'/g, '"');
   if (/CANCELED|UNDETERMINED/i.test(blob) && !/FINALIZED/.test(blob)) {
     fail(method, `tx ${tx} did not settle: ${blob.slice(0, 400)}`);
   }
   if (/"execution_result":\s*"ERROR"/i.test(blob)) {
-    fail(method, `tx ${tx} executed with an error: ${blob.slice(0, 600)}`);
+    const refusal = blob.match(/\[(?:[A-Z_]+)\][^"\\]{0,160}/);
+    fail(method,
+      `tx ${tx} was refused by the contract${refusal ? `: ${refusal[0]}` : " (execution error)"}`);
   }
   record(method, { tx });
   return { tx, blob, receipt: waitReceipt };
