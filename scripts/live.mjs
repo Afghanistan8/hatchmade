@@ -60,6 +60,13 @@ const FIXTURES = {
 
 const wait_defaults = { interval: 5000, retries: 180 };
 
+// The studio RPC occasionally serves an HTML error page or drops a
+// connection mid-flight. Those are transport failures, not contract
+// refusals, and a send that died before producing a tx id touched
+// nothing — so only that exact shape is retried.
+const TRANSIENT_RE = /DOCTYPE|Unexpected token|fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|ECONNREFUSED|socket|Bad Gateway| 50[234]|rate limit|too many requests|Internal Server Error/i;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function sha256(text) {
   return createHash("sha256").update(Buffer.from(text, "utf8")).digest("hex");
 }
@@ -146,30 +153,60 @@ function useAccount(name, restore) {
   if (restore) restore.push(name);
 }
 
-function writeTx(contract, method, args) {
+// Wraps cli() with retries for transient transport errors. A non-zero
+// exit that carries a tx hash is treated as sent (the receipt wait rules
+// on it); a non-zero exit with no hash is retried only when it matches
+// TRANSIENT_RE, because a genuine contract refusal must abort the run.
+async function cliRetry(args, what, { tries = 4, waitMs = 30000, sentMaySucceed = false } = {}) {
+  for (let i = 1; i <= tries; i++) {
+    const r = cli(args);
+    if (r.code === 0) return r;
+    const blob = `${r.out}\n${r.err}`;
+    if (sentMaySucceed && blob.match(/0x[0-9a-f]{64}/i)) return r;
+    if (!TRANSIENT_RE.test(blob) || i === tries) {
+      fail(what, `failed: ${r.out.slice(0, 300)}${r.err.slice(0, 800)}`);
+    }
+    console.log(`[retry] ${what}: transient RPC error, waiting ${waitMs / 1000}s (attempt ${i}/${tries})`);
+    await sleep(waitMs);
+  }
+  fail(what, "retry loop fell through");
+}
+
+async function writeTx(contract, method, args) {
   const sendArgs = ["write", contract, method];
   if (args && args.length > 0) {
     // empty --args confuses the CLI: it must be omitted, not emptied
     sendArgs.push("--args", ...(args || []).map(tok));
   }
   sendArgs.push("--rpc", RPC);
-  const send = cli(sendArgs);
-  if (send.code !== 0) fail(method, `write failed: ${send.out}${send.err}`);
+  const send = await cliRetry(sendArgs, method, { sentMaySucceed: true });
   const receipt = parseJsonLoose(send.out + "\n" + send.err) || {};
   const tx =
     receipt.tx_id || receipt.hash || receipt.txId ||
     (send.out + send.err).match(/0x[0-9a-f]{64}/i)?.[0];
   if (!tx) fail(method, `no tx id in output: ${send.out.slice(0, 800)}${send.err.slice(0, 800)}`);
-  const waited = cli(["receipt", tx, "--status", "FINALIZED",
-    "--interval", String(wait_defaults.interval),
-    "--retries", String(wait_defaults.retries),
-    "--rpc", RPC]);
+  let waited = null;
+  let blob = "";
+  for (let i = 1; i <= 4; i++) {
+    waited = cli(["receipt", tx, "--status", "FINALIZED",
+      "--interval", String(wait_defaults.interval),
+      "--retries", String(wait_defaults.retries),
+      "--rpc", RPC]);
+    blob = (JSON.stringify(parseJsonLoose(waited.out + "\n" + waited.err) || {}) +
+      waited.out + waited.err);
+    if (waited.code === 0 && /FINALIZED/.test(blob)) break;
+    if (i < 4) {
+      console.log(`[retry] ${method}: receipt wait disturbed, waiting 15s (attempt ${i}/4)`);
+      await sleep(15000);
+      continue;
+    }
+    fail(method, `tx ${tx} receipt never reported FINALIZED: ${blob.slice(0, 400)}`);
+  }
   const waitReceipt = parseJsonLoose(waited.out + "\n" + waited.err) || {};
   // Failure detection runs over the raw CLI text. A genuine contract
   // refusal carries a rollback with a bracketed payload; validators
   // cancelled after quorum also print `execution_result: ERROR` in
   // perfectly good transactions, so that shape alone proves nothing.
-  const blob = JSON.stringify(waitReceipt) + waited.out + waited.err;
   if (/CANCELED|UNDETERMINED/i.test(blob) && !/FINALIZED/.test(blob)) {
     fail(method, `tx ${tx} did not settle: ${blob.slice(0, 400)}`);
   }
@@ -182,20 +219,29 @@ function writeTx(contract, method, args) {
   return { tx, blob, receipt: waitReceipt };
 }
 
-function readCall(contract, method, args) {
+async function readCall(contract, method, args) {
   const callArgs = ["call", contract, method];
   if (args && args.length > 0) {
     callArgs.push("--args", ...(args || []).map(tok));
   }
   callArgs.push("--rpc", RPC);
-  const r = cli(callArgs);
-  if (r.code !== 0) fail(method, `call failed: ${r.out}${r.err}`);
-  const parsed = parseJsonLoose(r.out);
-  if (!parsed) {
-    console.error(`[WARN] ${method} output not JSON; raw: ${r.out.slice(0, 400)}`);
-    return { raw: r.out.trim() };
+  for (let i = 1; i <= 4; i++) {
+    const r = cli(callArgs);
+    if (r.code === 0) {
+      const parsed = parseJsonLoose(r.out);
+      if (!parsed) {
+        console.error(`[WARN] ${method} output not JSON; raw: ${r.out.slice(0, 400)}`);
+        return { raw: r.out.trim() };
+      }
+      return parsed;
+    }
+    if (!TRANSIENT_RE.test(`${r.out}\n${r.err}`) || i === 4) {
+      fail(method, `call failed: ${r.out.slice(0, 300)}${r.err.slice(0, 800)}`);
+    }
+    console.log(`[retry] ${method}: transient RPC error, waiting 15s (attempt ${i}/4)`);
+    await sleep(15000);
   }
-  return parsed;
+  fail(method, "read retry loop fell through");
 }
 
 async function main() {
@@ -234,31 +280,71 @@ async function main() {
   try {
     original = (cli(["account", "list"]).out.match(/^\*\s*([\w-]+)/) || [])[1];
 
-    const counts = () => readCall(CONTRACT, "get_protocol_info").counts;
+    const counts = async () => (await readCall(CONTRACT, "get_protocol_info")).counts;
 
-    const runCase = (name, product, lot, bulletinKey) => {
-      const before = counts().case;
-      writeTx(CONTRACT, "open_case", [product, lot]);
-      const after = counts().case;
+    // A rerun after a transport failure must not spam fresh cases: an OPEN,
+    // unsealed case with the same product/lot whose pins all belong to the
+    // same scenario is adopted and completed (pin dedupe by URL).
+    const scenarioURLs = (bulletinKey) => [
+      FIXTURES[bulletinKey].url, FIXTURES.notice.url, FIXTURES.manifest.url,
+    ];
+    const sourceURLs = async (sourceIds) => (await Promise.all(
+      sourceIds.map((sid) => readCall(CONTRACT, "get_source", [sid])),
+    )).map((s) => s.url);
+    const adoptCase = async (product, lot, bulletinKey) => {
+      const page = await readCall(CONTRACT, "list_cases", [0, 100]);
+      const want = scenarioURLs(bulletinKey);
+      for (const row of page.items || []) {
+        if (row.state !== "OPEN" || row.sealed) continue;
+        if (row.product !== product || row.lot !== lot) continue;
+        const urls = await sourceURLs(row.source_ids || []);
+        if (urls.length === 0 || urls.length >= 3) continue;
+        if (!urls.every((u) => want.includes(u))) continue;
+        if (!urls.includes(FIXTURES[bulletinKey].url)) continue;
+        return row.case_id;
+      }
+      return null;
+    };
+
+    const runCase = async (name, product, lot, bulletinKey) => {
+      const adopt = await adoptCase(product, lot, bulletinKey);
+      if (adopt) {
+        record(name, { case_id: adopt, adopted: true });
+        console.log(`[case] adopting incomplete case ${adopt} for scenario ${bulletinKey}`);
+        return adopt;
+      }
+      const before = (await counts()).case;
+      await writeTx(CONTRACT, "open_case", [product, lot]);
+      const after = (await counts()).case;
       if (after !== before + 1) fail(name, `case counter did not advance (${before} -> ${after})`);
       const cid = `C${after}`;
       record(name, { case_id: cid, product, lot, bulletin: bulletinKey });
       return cid;
     };
 
-    const pinAndSeal = (cid, bulletinKey) => {
-      writeTx(CONTRACT, "pin_source", [cid, FIXTURES[bulletinKey].url, FIXTURES[bulletinKey].body]);
-      writeTx(CONTRACT, "pin_source", [cid, FIXTURES.notice.url, FIXTURES.notice.body]);
-      writeTx(CONTRACT, "pin_source", [cid, FIXTURES.manifest.url, FIXTURES.manifest.body]);
-      writeTx(CONTRACT, "seal_packet", [cid]);
-      const packet = readCall(CONTRACT, "get_packet", [cid]);
+    const pinAndSeal = async (cid, bulletinKey) => {
+      const have = new Set(await sourceURLs(
+        (await readCall(CONTRACT, "get_case", [cid])).source_ids || []));
+      for (const [url, body] of [
+        [FIXTURES[bulletinKey].url, FIXTURES[bulletinKey].body],
+        [FIXTURES.notice.url, FIXTURES.notice.body],
+        [FIXTURES.manifest.url, FIXTURES.manifest.body],
+      ]) {
+        if (have.has(url)) {
+          record("pin_source", { case_id: cid, url, skipped: "already pinned" });
+          continue;
+        }
+        await writeTx(CONTRACT, "pin_source", [cid, url, body]);
+      }
+      await writeTx(CONTRACT, "seal_packet", [cid]);
+      const packet = await readCall(CONTRACT, "get_packet", [cid]);
       record("seal_packet", { case_id: cid, packet_sha256: packet.packet_sha256 || null });
     };
 
-    const requestRun = (cid) => {
-      const before = counts().assessment;
-      writeTx(CONTRACT, "request_assessment", [cid]);
-      const after = counts().assessment;
+    const requestRun = async (cid) => {
+      const before = (await counts()).assessment;
+      await writeTx(CONTRACT, "request_assessment", [cid]);
+      const after = (await counts()).assessment;
       if (after !== before + 1) fail("request_assessment", `counter did not advance (${before} -> ${after})`);
       const aid = `A${after}`;
       record("request_assessment", { case_id: cid, assessment_id: aid });
@@ -275,23 +361,23 @@ async function main() {
       [HOSTS.logistics, "LOGISTICS", "meridian outbound manifests (fixture mirror)"],
     ];
     for (const [host, kind, note] of binds) {
-      const state = readCall(CONTRACT, "authority_bound", [host]);
+      const state = await readCall(CONTRACT, "authority_bound", [host]);
       if (state.bound === true) {
         record("register_authority", { host, kind, skipped: `already bound as ${state.kind}` });
         if (state.kind !== kind) fail("register_authority", `${host} is bound as ${state.kind}, not ${kind}`);
         continue;
       }
-      writeTx(CONTRACT, "register_authority", [host, kind, note]);
+      await writeTx(CONTRACT, "register_authority", [host, kind, note]);
     }
 
     // -- case 1: the recall bulletin covers LOT-9751 ----------------------------
-    const cid1 = runCase("OPEN_QUARANTINE_CASE", "Aero-Puck AP-1150", "LOT-9751", "recall");
-    pinAndSeal(cid1, "recall");
-    const a1 = requestRun(cid1);
+    const cid1 = await runCase("OPEN_QUARANTINE_CASE", "Aero-Puck AP-1150", "LOT-9751", "recall");
+    await pinAndSeal(cid1, "recall");
+    const a1 = await requestRun(cid1);
 
     useAccount("hatchmade-exec");
-    writeTx(CONTRACT, "execute_assessment", [a1]);
-    const gate1 = readCall(CONTRACT, "get_gate", [cid1]);
+    await writeTx(CONTRACT, "execute_assessment", [a1]);
+    const gate1 = await readCall(CONTRACT, "get_gate", [cid1]);
     if (gate1.gate !== "BLOCKED") fail("case1", `gate is ${gate1.gate}, expected BLOCKED`);
     if (gate1.settled_outcome !== "QUARANTINE") {
       console.error(`[WARN] case 1 settled ${gate1.settled_outcome} (the live reader judged the live bulletin; report records the truth)`);
@@ -300,30 +386,40 @@ async function main() {
 
     // -- case 2: the bulletin that excludes this lot, released by the reviewer ---
     useAccount("deployer");
-    const cid2 = runCase("OPEN_CLEAR_CASE", "Aero-Puck AP-1150", "LOT-9751", "clear");
-    pinAndSeal(cid2, "clear");
-    const a2 = requestRun(cid2);
+    const cid2 = await runCase("OPEN_CLEAR_CASE", "Aero-Puck AP-1150", "LOT-9751", "clear");
+    await pinAndSeal(cid2, "clear");
+    const a2 = await requestRun(cid2);
 
     useAccount("hatchmade-exec");
-    writeTx(CONTRACT, "execute_assessment", [a2]);
-    const gate2 = readCall(CONTRACT, "get_gate", [cid2]);
+    await writeTx(CONTRACT, "execute_assessment", [a2]);
+    const gate2 = await readCall(CONTRACT, "get_gate", [cid2]);
     record("CASE2_OUTCOME", { case_id: cid2, settled_outcome: gate2.settled_outcome, gate: gate2.gate });
     if (gate2.settled_outcome !== "CLEAR") {
       console.error("[WARN] case 2 did not settle CLEAR -> the reviewer path will refuse; report records the truth");
     }
 
+    // The reviewer path is rerun-safe: proposal/acceptance already on chain
+    // is not repeated, and a released gate is only read.
     useAccount("deployer");
-    writeTx(CONTRACT, "propose_reviewer", [cid2, reviewerAddr]);
-    useAccount("hatchmade-reviewer");
-    writeTx(CONTRACT, "accept_reviewer", [cid2]);
-    writeTx(CONTRACT, "release_gate",
-      [cid2, "Independent review: bulletin 2026-81 scope does not cover LOT-9751."]);
-    const gate3 = readCall(CONTRACT, "get_gate", [cid2]);
+    const row2 = await readCall(CONTRACT, "get_case", [cid2]);
+    if (row2.released) {
+      console.log(`[case] ${cid2} already released; skipping the reviewer steps`);
+    } else {
+      if (row2.reviewer_state === "NONE") {
+        await writeTx(CONTRACT, "propose_reviewer", [cid2, reviewerAddr]);
+        useAccount("hatchmade-reviewer");
+        await writeTx(CONTRACT, "accept_reviewer", [cid2]);
+      }
+      useAccount("hatchmade-reviewer");
+      await writeTx(CONTRACT, "release_gate",
+        [cid2, "Independent review: bulletin 2026-81 scope does not cover LOT-9751."]);
+    }
+    const gate3 = await readCall(CONTRACT, "get_gate", [cid2]);
     if (gate3.gate !== "RELEASED") fail("case2", `gate is ${gate3.gate}, expected RELEASED`);
     record("GATE_RELEASED", { case_id: cid2, released_at: gate3.released_at });
 
     // -- the quarantined case must still be shut ---------------------------------
-    const blockStill = readCall(CONTRACT, "get_gate", [cid1]);
+    const blockStill = await readCall(CONTRACT, "get_gate", [cid1]);
     record("CASE1_STILL_BLOCKED", { case_id: cid1, gate: blockStill.gate });
 
     if (original) useAccount(original);
