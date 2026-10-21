@@ -1,0 +1,12 @@
+REGENCY AEROSPACE - SERVICE BULLETIN 2026-77 (A42X)
+Product line: Aero-Puck outbound assembly, P/N AP-1150.
+
+RECALL NOTICE. Recall ACP-2026-11 is ACTIVE for this product.
+Affected lot range: LOT-9720 through LOT-9782 inclusive.
+Every unit of P/N AP-1150 with a lot label inside that range, including
+LOT-9751, is subject to quarantine on receipt and to mandatory inspection
+and retrofit before further flight assembly. Disposition of affected units
+is reserved to the Regency Aerospace recall desk.
+
+This bulletin supersedes bulletin 2026-61 and remains active until
+withdrawn by a later regency service bulletin.

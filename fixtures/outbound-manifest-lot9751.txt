@@ -1,0 +1,6 @@
+MERIDIAN SUPPLY - OUTBOUND MANIFEST M-4471
+Ship-to: Crosswind Field Services, Amarillo TX.
+Assembly: Aero-Puck AP-1150. Lot label: LOT-9751. Units: 24.
+Carrier: Continental Freight, seal CF-88213, departed 2026-10-02.
+Regulator bulletin referenced at shipment: 2026-77.
+Disposition: hold at receiving under the active bulletin for this product.

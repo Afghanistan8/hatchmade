@@ -1,0 +1,10 @@
+MERIDIAN SUPPLY - CONSUMER NOTICE 2026-58
+Product: Aero-Puck outbound assembly AP-1150.
+
+This notice covers consignments of AP-1150 assembled by Meridian Supply
+during October 2026. Disposition for lot LOT-9751: hold at receiving and
+await instructions under the regulator service bulletins referenced at
+shipment. Lot LOT-8001, assembled in the same window, carries the same
+hold instruction pending its own bulletin check.
+
+Distribution: receiver of record; carrier of record.
