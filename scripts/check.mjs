@@ -30,7 +30,24 @@ const run = (what, cmd, args, cwd, opts) => {
   }
 };
 
-const py = process.platform === "win32" ? "python" : "python3";
+function resolvePython() {
+  if (process.env.PYTHON) return process.env.PYTHON;
+  const names = process.platform === "win32" ? ["python", "py"] : ["python3", "python"];
+  // Windows App Execution Aliases may put a non-runnable `python.exe`
+  // before the real installation on PATH. Probe every `where` result so the
+  // one-command gate works on a normal Windows developer machine as promised.
+  if (process.platform === "win32") {
+    const found = spawnSync("where.exe", ["python"], { encoding: "utf8" });
+    names.push(...String(found.stdout || "").split(/\r?\n/).filter(Boolean));
+  }
+  for (const candidate of names) {
+    const probe = spawnSync(candidate, ["--version"], { stdio: "ignore" });
+    if (probe.status === 0) return candidate;
+  }
+  return names[0];
+}
+
+const py = resolvePython();
 const nodeDir = path.dirname(process.execPath);
 const npmDir = path.join(nodeDir, "node_modules", "npm", "bin");
 const npxCli = path.join(npmDir, "npx-cli.js");

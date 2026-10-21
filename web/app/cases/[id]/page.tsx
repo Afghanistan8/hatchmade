@@ -49,12 +49,18 @@ export default function CaseConsole() {
       setLoadErr(null);
       const caseData = await read<any>("get_case", [caseId]);
       setCase(caseData);
-      if (isTrue(caseData?.sealed) || caseData?.state === "FROZEN" || caseData?.state === "SETTLED") {
-        setPacket(await read<Packet>("get_packet", [caseId]));
-      }
-      const sheets = await read<any>("list_case_assessments", [caseId, 0, 50]);
+      // These views are independent once the case tells us whether a packet
+      // exists. Start them together so the batching transport sends one RPC
+      // wave and the assessment/history panels do not lag behind the header.
+      const [nextPacket, sheets, hist] = await Promise.all([
+        isTrue(caseData?.sealed) || caseData?.state === "FROZEN" || caseData?.state === "SETTLED"
+          ? read<Packet>("get_packet", [caseId])
+          : Promise.resolve(null),
+        read<any>("list_case_assessments", [caseId, 0, 50]),
+        read<any>("get_history", [caseId, 0, 50]),
+      ]);
+      setPacket(nextPacket);
       setAssessments(sheets.items ?? []);
-      const hist = await read<any>("get_history", [caseId, 0, 50]);
       setHistory(hist.items ?? []);
     } catch (e: any) {
       const { code, text } = stripCode(e?.message ?? String(e));
@@ -640,7 +646,7 @@ function RecomputeDigest({ a }: { a: Assessment }) {
     return <span className="break-all font-mono text-zinc-400">{a.decision_digest}</span>;
   }
   return (
-    <span className={`font-mono ${state.ok ? "text-emerald-400" : "text-rose-400"}`}>
+    <span className={`max-w-full break-all font-mono ${state.ok ? "text-emerald-400" : "text-rose-400"}`}>
       {a.decision_digest}
       {state.ok ? " ✓ recomputed" : ` ✕ recomputed ${state.digest}`}
     </span>
