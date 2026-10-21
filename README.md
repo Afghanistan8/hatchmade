@@ -50,10 +50,9 @@ Deployment history, including an abandoned first address and why, is in
 
 ## Quick start
 
-Local checks:
+Local checks (one command; the repository uses no GitHub Actions):
 
-    python -m pytest tests         # 59 tests, Direct Mode
-    cd web && npm ci && npm run build
+    node scripts/check.mjs            # pytest + tsc + lint + build
 
 Against the live contract (genlayer CLI installed and unlocked with its
 own keystore; scripts never hold keys):
