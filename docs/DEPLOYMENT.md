@@ -1,0 +1,95 @@
+# Deployment
+
+Network: **GenLayer Studionet** — RPC `https://studio.genlayer.com/api`,
+chain id `61999`. Nothing else is supported; the contract itself records
+`network: "studionet"`.
+
+## The runner pin, and why it is not an alias
+
+Line 1 of `contracts/hatchmade.py`:
+
+```
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+```
+
+This is the full length-pinned runner content-address, not the
+`py-genlayer:latest`-style alias. The HTTP and LLM namespaces
+(`gl.nondet.web.get`, `gl.nondet.exec_prompt`) respond through the runner,
+and their behavior is part of this protocol's consensus: two nodes on a
+different runner version could diverge on fetch framing or prompt
+handling. The pin is checked at deploy time by `scripts/deploy.mjs`
+before anything is sent, and each panel node re-verifies it as part of
+repeating the run.
+
+## Accounts
+
+Deployed with the user's own unlocked genlayer CLI keystore; **scripts
+never hold keys** — the CLI resolves the account, the scripts call the
+CLI. Used in the reference run:
+
+| role               | address                                    |
+|--------------------|--------------------------------------------|
+| deployer (opener/binder in the scenario) | `0x4184bc5e5444f250767e8d33a49817a9b4fb0df3` |
+| `hatchmade-exec`   | `0xef18c89f28e4f1aa2a7f180efce01b423f7bde0b` |
+| `hatchmade-reviewer` | `0x1b7e06bcd6d4b15b14ecac6baf40db1757d9062f` |
+
+Role accounts are bootstrapped by `scripts/bootstrap-accounts.mjs`
+(funded, passwords written to a gitignored `.env`).
+
+The contract records the deployer's address but consults it for nothing
+(R-OWN-1): after this transaction, that key is exactly as privileged as
+anyone else's.
+
+## Current deployment
+
+| field                | value                                                    |
+|----------------------|----------------------------------------------------------|
+| contract             | `0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B`             |
+| deploy tx            | `0xa55ba447a26743f74bf6a2c4d093878cb65545b4ebebeb1d25e60f03ff8e1c7c` |
+| deployed at          | 2026-10-21T06:18:18.797Z                                 |
+| rules / schema       | `hatchmade-gate-1` / `hatchmade.evidence-gate@1`          |
+| source sha256        | `969eac339a4848cd2fc57e21724fbf4fd65a34d7a3b98fd6afd11bf5f29d0c7a` |
+| deployed code sha256 | `cde36f7619155215b47f2820de778e5511961014023b818a8906af282aeff3f3` |
+
+The canonical machine record lives in `scripts/out/deployment.json`
+(committed), including abandonment history.
+
+### Early addresses, and why they were abandoned
+
+- `0xc1a79F5c729199561ce2eEf06309B833193BF3b9` — deployed during
+  integration, then abandoned. Its URL gate treated a `@` anywhere —
+  including the version marker in `cdn.jsdelivr.net` repo paths — as
+  userinfo, which made a legitimately pinned manufacturer source
+  unfetchable under R-SRC-1; the error surfaced during the live run as
+  validators agreeing on `[INCOMPLETE_PACKET]` at seal, *the protocol's
+  own refusals firing on chain*, which is recorded part of the story.
+  Authority bindings were already taken there (first binding is forever),
+  so the correct fix was a redeploy with the corrected rule
+  (userinfo banned in the authority section only), not a mutation: there
+  is nothing mutable about a Hatchmade deployment — no upgrade, no owner,
+  no admin (R-OWN-1). No protocol state of value existed on it.
+- `0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B` — current.
+
+## Deploy / verify
+
+    node scripts/deploy.mjs    # deploy, verify get_protocol_info, write manifest
+    node scripts/verify.mjs    # recompute digests from public views on the address in HATCHMADE_CONTRACT or the manifest
+
+The deploy script refuses to finish unless `get_protocol_info` answers
+with `hatchmade-gate-1`. Watch the contract on the explorer:
+https://explorer-studio.genlayer.com/address/0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B
+
+## Notes picked up during integration (worth keeping)
+
+- The RPC answers only checksummed addresses; lowercase hex reads back
+  "Contract not found". Scripts and the console pin the checksummed form.
+- The genlayer CLI prints JavaScript object literals (bare keys,
+  single-quoted values); `scripts/live.mjs` normalizes them rather than
+  trusting a quoting assumption.
+- Command tolerances: an empty `--args` list is *omitted*, not passed;
+  a genuinely refused write carries `exit_code 1` in the receipt, while
+  validators cancelled after quorum also print `execution_result: ERROR`
+  with `VALIDATOR_QUORUM_REACHED` in perfectly good transactions — a
+  fact that must not, and does not, get parsed as failure.
+- Studionet consensus is minutes, not seconds: the CLI tools wait for
+  `FINALIZED` with generous retries.
