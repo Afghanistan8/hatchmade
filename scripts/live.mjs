@@ -27,7 +27,7 @@ import path from "node:path";
 
 const RPC = process.env.HATCHMADE_RPC || "https://studio.genlayer.com/api";
 const CHAIN_ID = 61999;
-const CONTRACT = (process.env.HATCHMADE_CONTRACT || "").toLowerCase();
+const CONTRACT = (process.env.HATCHMADE_CONTRACT || "").trim();
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = path.join(ROOT, "scripts", "out");
 
@@ -208,12 +208,21 @@ async function main() {
     useAccount("deployer");
 
     // -- bind the three authority kinds to distinct hosts (deployer) -----------
-    writeTx(CONTRACT, "register_authority",
-      [HOSTS.regulator, "REGULATOR", "regency service bulletins (fixture mirror)"]);
-    writeTx(CONTRACT, "register_authority",
-      [HOSTS.manufacturer, "MANUFACTURER", "meridian consumer notices (fixture mirror)"]);
-    writeTx(CONTRACT, "register_authority",
-      [HOSTS.logistics, "LOGISTICS", "meridian outbound manifests (fixture mirror)"]);
+    // (if a previous run bound some hosts already, skip those: rerun-friendly)
+    const binds = [
+      [HOSTS.regulator, "REGULATOR", "regency service bulletins (fixture mirror)"],
+      [HOSTS.manufacturer, "MANUFACTURER", "meridian consumer notices (fixture mirror)"],
+      [HOSTS.logistics, "LOGISTICS", "meridian outbound manifests (fixture mirror)"],
+    ];
+    for (const [host, kind, note] of binds) {
+      const state = readCall(CONTRACT, "authority_bound", [host]);
+      if (state.bound === true) {
+        record("register_authority", { host, kind, skipped: `already bound as ${state.kind}` });
+        if (state.kind !== kind) fail("register_authority", `${host} is bound as ${state.kind}, not ${kind}`);
+        continue;
+      }
+      writeTx(CONTRACT, "register_authority", [host, kind, note]);
+    }
 
     // -- case 1: the recall bulletin covers LOT-9751 ----------------------------
     const cid1 = runCase("OPEN_QUARANTINE_CASE", "Aero-Puck AP-1150", "LOT-9751", "recall");

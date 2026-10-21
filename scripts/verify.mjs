@@ -22,7 +22,7 @@ import path from "node:path";
 
 const RPC = process.env.HATCHMADE_RPC || "https://studio.genlayer.com/api";
 const CHAIN_ID = 61999;
-const CONTRACT = (process.env.HATCHMADE_CONTRACT || "").toLowerCase();
+const CONTRACT = (process.env.HATCHMADE_CONTRACT || "").trim();
 
 function cli(args) {
   const r = spawnSync("genlayer", args, { encoding: "utf8", shell: true });

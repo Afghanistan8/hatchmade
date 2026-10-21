@@ -3,7 +3,7 @@
   "network": "https://studio.genlayer.com/api",
   "chain_id": 61999,
   "runner_pin": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
-  "contract_address": "0xc1a79f5c729199561ce2eef06309b833193bf3b9",
+  "contract_address": "0xc1a79F5c729199561ce2eEf06309B833193BF3b9",
   "deploy_tx": "0x0354ae04fa248f0ef6f8170f3c729ea3e8873af28602ae843f4fa50fba640a42",
   "deployed_at": "2026-10-21T05:52:03.119Z",
   "source_sha256": "e8bec9b3ae189e40f38fc1368e1efa14903161b3fec29140eb15299ec00cb7f0",

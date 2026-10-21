@@ -133,7 +133,7 @@ async function main() {
     console.error("[HATCHMADE-DEPLOY] could not find the contract address in the receipt:\n" + waited.out.slice(0, 2000));
     process.exit(17);
   }
-  address = address.toLowerCase();
+  address = address.trim();
   console.log(`[deploy] contract ${address}`);
 
   // -- prove it: the deployed gate must answer the protocol view ---------------
