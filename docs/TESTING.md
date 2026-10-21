@@ -60,10 +60,9 @@ the runner.
 `provider`/`stranger` (unrelated parties), `reviewer` — so every test
 states its roles explicitly.
 
-## CI
-
-`.github/workflows/ci.yml` runs the pytest suite plus the web console's
-`npx tsc --noEmit` and `npm run build` on every push and pull request.
+Checks are local, run by hand or by script: the pytest suite, the web
+console's `npx tsc --noEmit` and `npm run build`. The repository does not
+use GitHub Actions.
 
 ## What is not covered by hermetic tests and is covered elsewhere
 
