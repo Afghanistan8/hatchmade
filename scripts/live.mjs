@@ -82,13 +82,22 @@ async function rpc(method, params = []) {
 const GENLAYER_JS = path.join(
   process.env.APPDATA || "", "npm", "node_modules", "genlayer", "dist", "index.js",
 );
+const WITH_SHELL = !existsSync(GENLAYER_JS);
+
+// Under a shell transport the quotes around a value are consumed by the
+// shell; under the direct transport argv reaches the CLI verbatim, so the
+// quoting must be dropped or the CLI would parse the quote characters
+// into the value itself.
+function tok(value) {
+  const text = String(value).replace(/"/g, "");
+  return WITH_SHELL ? `"${text}"` : text;
+}
 
 function cli(args, opts = {}) {
-  const withShell = !existsSync(GENLAYER_JS);
-  const argv = withShell ? ["genlayer", ...args] : [GENLAYER_JS, ...args];
+  const argv = WITH_SHELL ? ["genlayer", ...args] : [GENLAYER_JS, ...args];
   const r = spawnSync(
-    withShell ? "genlayer" : process.execPath, argv,
-    { encoding: "utf8", shell: withShell, ...opts },
+    WITH_SHELL ? "genlayer" : process.execPath, argv,
+    { encoding: "utf8", shell: WITH_SHELL, ...opts },
   );
   return { code: r.status, out: (r.stdout || "") + "", err: (r.stderr || "") + "" };
 }
@@ -141,7 +150,7 @@ function writeTx(contract, method, args) {
   const sendArgs = ["write", contract, method];
   if (args && args.length > 0) {
     // empty --args confuses the CLI: it must be omitted, not emptied
-    sendArgs.push("--args", ...(args || []).map((a) => `"${String(a).replace(/"/g, "")}"`));
+    sendArgs.push("--args", ...(args || []).map(tok));
   }
   sendArgs.push("--rpc", RPC);
   const send = cli(sendArgs);
@@ -176,7 +185,7 @@ function writeTx(contract, method, args) {
 function readCall(contract, method, args) {
   const callArgs = ["call", contract, method];
   if (args && args.length > 0) {
-    callArgs.push("--args", ...(args || []).map((a) => `"${String(a).replace(/"/g, "")}"`));
+    callArgs.push("--args", ...(args || []).map(tok));
   }
   callArgs.push("--rpc", RPC);
   const r = cli(callArgs);
