@@ -81,6 +81,13 @@ function parseJsonLoose(text) {
   for (const candidate of candidates) {
     try { return JSON.parse(candidate); } catch { /* keep looking */ }
   }
+  // The genlayer CLI prints JS object literals (single quotes). Convert the
+  // whole block and try again; if any value contains an apostrophe the
+  // conversion is wrong, parse fails, and the caller falls back to raw text.
+  for (const candidate of candidates) {
+    const normalized = candidate.replace(/'/g, '"');
+    try { return JSON.parse(normalized); } catch { /* keep looking */ }
+  }
   return null;
 }
 
@@ -108,8 +115,13 @@ function useAccount(name, restore) {
 }
 
 function writeTx(contract, method, args) {
-  const quoted = (args || []).map((a) => `"${String(a).replace(/"/g, "")}"`);
-  const send = cli(["write", contract, method, "--args", ...quoted, "--rpc", RPC]);
+  const sendArgs = ["write", contract, method];
+  if (args && args.length > 0) {
+    // empty --args confuses the CLI: it must be omitted, not emptied
+    sendArgs.push("--args", ...(args || []).map((a) => `"${String(a).replace(/"/g, "")}"`));
+  }
+  sendArgs.push("--rpc", RPC);
+  const send = cli(sendArgs);
   if (send.code !== 0) fail(method, `write failed: ${send.out}${send.err}`);
   const receipt = parseJsonLoose(send.out + "\n" + send.err) || {};
   const tx =
@@ -133,8 +145,12 @@ function writeTx(contract, method, args) {
 }
 
 function readCall(contract, method, args) {
-  const quoted = (args || []).map((a) => `"${String(a).replace(/"/g, "")}"`);
-  const r = cli(["call", contract, method, "--args", ...quoted, "--rpc", RPC]);
+  const callArgs = ["call", contract, method];
+  if (args && args.length > 0) {
+    callArgs.push("--args", ...(args || []).map((a) => `"${String(a).replace(/"/g, "")}"`));
+  }
+  callArgs.push("--rpc", RPC);
+  const r = cli(callArgs);
   if (r.code !== 0) fail(method, `call failed: ${r.out}${r.err}`);
   const parsed = parseJsonLoose(r.out);
   if (!parsed) {

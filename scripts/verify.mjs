@@ -87,8 +87,10 @@ async function main() {
   let failures = 0;
 
   const call = (method, args) => {
-    const quoted = (args || []).map((a) => `"${a}"`);
-    const r = cli(["call", CONTRACT, method, "--args", ...quoted, "--rpc", RPC]);
+    const callArgs = ["call", CONTRACT, method];
+    if (args && args.length > 0) callArgs.push("--args", ...args);
+    callArgs.push("--rpc", RPC);
+    const r = cli(callArgs);
     const parsed = parseJsonLoose(r.out);
     if (!parsed) {
       console.error(`[ABORT] ${method} not parseable: ${r.out.slice(0, 300)}${r.err.slice(0, 300)}`);
