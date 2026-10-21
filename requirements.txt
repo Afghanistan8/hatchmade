@@ -1,0 +1,7 @@
+# Hatchmade contract test stack (official GenLayer tooling).
+#   genlayer-test   -- pytest plugin + Direct Mode VM + cheatcodes
+#   genlayer-py     -- the client SDK the plugin drives
+#   pytest          -- runner
+genlayer-test==0.29.2
+genlayer-py==0.16.3
+pytest==9.1.1

@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.gltest-cache/
+htmlcov/
+.coverage
+venv/
+.venv/
+
+# Node
+node_modules/
+web/.next/
+web/out/
+next-env.d.ts
+npm-debug.log*
+
+# secrets — never commit
+.env
+web/.env.local
+*.key
+deployer.json
+!deploy/.gitkeep
+
+# scratch / local artifacts
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+coverage/
+
+# gltest artifacts
+artifacts/
+
