@@ -44,7 +44,7 @@ export default function ProtocolPage() {
               <Stat key={k} label={k.replace("max_", "")} value={String(v)} />
             ))
           ) : (
-            <span className="col-span-4 text-zinc-500">…</span>
+            <span className="col-span-2 text-zinc-500 sm:col-span-4">…</span>
           )}
         </div>
       </Card>

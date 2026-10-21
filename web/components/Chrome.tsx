@@ -72,7 +72,7 @@ export default function Chrome({ children }: { children: React.ReactNode }) {
       />
 
       <header className="sticky top-0 z-40 border-b border-zinc-800/70 bg-zinc-950/85 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-x-6 gap-y-2 px-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:h-14 sm:py-0">
           <Link href="/" className="flex shrink-0 items-baseline gap-2">
             <span className="font-mono text-[13px] font-semibold tracking-tight text-emerald-400">
               hatchmade
