@@ -17,12 +17,22 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const RPC = process.env.HATCHMADE_RPC || "https://studio.genlayer.com/api";
 const CHAIN_ID = 61999;
-const CONTRACT = (process.env.HATCHMADE_CONTRACT || "").trim();
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const OUT_DIR = path.join(ROOT, "scripts", "out");
+const MANIFEST = path.join(OUT_DIR, "deployment.json");
+
+let CONTRACT = (process.env.HATCHMADE_CONTRACT || "").trim();
+if (!CONTRACT && existsSync(MANIFEST)) {
+  try {
+    CONTRACT = JSON.parse(readFileSync(MANIFEST, "utf8")).contract_address || "";
+  } catch { /* env decides */ }
+}
 
 function cli(args) {
   const r = spawnSync("genlayer", args, { encoding: "utf8", shell: true });
@@ -63,7 +73,7 @@ function canonSorted(value) {
 }
 
 async function main() {
-  if (!/^0x[0-9a-f]{40}$/.test(CONTRACT)) {
+  if (!/^0x[0-9a-fA-F]{40}$/.test(CONTRACT)) {
     console.error("set HATCHMADE_CONTRACT=0x...");
     process.exit(1);
   }

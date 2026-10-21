@@ -21,15 +21,21 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const RPC = process.env.HATCHMADE_RPC || "https://studio.genlayer.com/api";
 const CHAIN_ID = 61999;
-const CONTRACT = (process.env.HATCHMADE_CONTRACT || "").trim();
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = path.join(ROOT, "scripts", "out");
+
+let CONTRACT = (process.env.HATCHMADE_CONTRACT || "").trim();
+if (!CONTRACT && existsSync(path.join(OUT_DIR, "deployment.json"))) {
+  try {
+    CONTRACT = JSON.parse(readFileSync(path.join(OUT_DIR, "deployment.json"), "utf8")).contract_address || "";
+  } catch { /* env decides */ }
+}
 
 const FIX_BASE_RAW = "https://raw.githubusercontent.com/Afghanistan8/hatchmade/main/fixtures";
 const FIX_BASE_JSD = "https://cdn.jsdelivr.net/gh/Afghanistan8/hatchmade@main/fixtures";
@@ -139,8 +145,8 @@ function readCall(contract, method, args) {
 }
 
 async function main() {
-  if (!CONTRACT || !/^0x[0-9a-f]{40}$/.test(CONTRACT)) {
-    fail("contract", "set HATCHMADE_CONTRACT=0x... (see scripts/out/deployment-*.json)");
+  if (!CONTRACT || !/^0x[0-9a-fA-F]{40}$/.test(CONTRACT)) {
+    fail("contract", "set HATCHMADE_CONTRACT=0x... (see scripts/out/deployment.json)");
   }
   const chainHex = await rpc("eth_chainId");
   if (parseInt(chainHex, 16) !== CHAIN_ID) {
