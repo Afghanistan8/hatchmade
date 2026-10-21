@@ -6,6 +6,10 @@
 import { createClient, chains } from "genlayer-js";
 import { CONTRACT_ADDRESS } from "./config";
 import { unmap } from "./format";
+// Installs the gen_call batching fetch (rate limit bypass: a POST with N
+// gen_calls costs one slot of the anonymous 30/min read bucket). Imports
+// for side effect, before any client is created.
+import "./rpc-batch";
 
 export type Eip1193 = {
   request: (args: { method: string; params?: unknown[] | object }) => Promise<any>;

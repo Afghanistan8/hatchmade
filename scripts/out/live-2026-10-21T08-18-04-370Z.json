@@ -1,0 +1,166 @@
+{
+  "protocol": "hatchmade",
+  "network": "https://studio.genlayer.com/api",
+  "contract": "0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B",
+  "at": "2026-10-21T08:18:04.368Z",
+  "fixtures": {
+    "recall": {
+      "url": "https://raw.githubusercontent.com/Afghanistan8/hatchmade/main/fixtures/regulator-bulletin-recall-lot9751.txt",
+      "sha256": "ab9a8e7d8167df5d580d30b8805c76a1fa16e8c3b7babed44c096bed692696f2"
+    },
+    "clear": {
+      "url": "https://raw.githubusercontent.com/Afghanistan8/hatchmade/main/fixtures/regulator-bulletin-clear-lot9751.txt",
+      "sha256": "469a88803c91e0a1b735a8477e36f05558ebeabd99e48547e1a280ddac5d22fc"
+    },
+    "notice": {
+      "url": "https://cdn.jsdelivr.net/gh/Afghanistan8/hatchmade@main/fixtures/manufacturer-notice.txt",
+      "sha256": "9dd80e8be19d2984f08c3153f76dd4016cad00ff10fc75a5c7fa17a160f7d830"
+    },
+    "manifest": {
+      "url": "https://cdn.statically.io/gh/Afghanistan8/hatchmade/main/fixtures/outbound-manifest-lot9751.txt",
+      "sha256": "4c0324938dfe9bc60cea8ec4314c00e0b39dab8d3ca7632fe115ecdbb90a9796"
+    }
+  },
+  "steps": [
+    {
+      "step": "register_authority",
+      "host": "raw.githubusercontent.com",
+      "kind": "REGULATOR",
+      "skipped": "already bound as REGULATOR"
+    },
+    {
+      "step": "register_authority",
+      "host": "cdn.jsdelivr.net",
+      "kind": "MANUFACTURER",
+      "skipped": "already bound as MANUFACTURER"
+    },
+    {
+      "step": "register_authority",
+      "host": "cdn.statically.io",
+      "kind": "LOGISTICS",
+      "skipped": "already bound as LOGISTICS"
+    },
+    {
+      "step": "OPEN_QUARANTINE_CASE",
+      "case_id": "C3",
+      "adopted": true
+    },
+    {
+      "step": "pin_source",
+      "case_id": "C3",
+      "url": "https://raw.githubusercontent.com/Afghanistan8/hatchmade/main/fixtures/regulator-bulletin-recall-lot9751.txt",
+      "skipped": "already pinned"
+    },
+    {
+      "step": "pin_source",
+      "case_id": "C3",
+      "url": "https://cdn.jsdelivr.net/gh/Afghanistan8/hatchmade@main/fixtures/manufacturer-notice.txt",
+      "skipped": "already pinned"
+    },
+    {
+      "step": "pin_source",
+      "tx": "0x4a420674d33c3e2f03873ec910a656b90ac2b6ec4185ed2e2680c8385e0482c6"
+    },
+    {
+      "step": "seal_packet",
+      "tx": "0xcd441b618bc29604a24c3450abd6130751f3974c225a93f8bca81655ff6159e4"
+    },
+    {
+      "step": "seal_packet",
+      "case_id": "C3",
+      "packet_sha256": "29c50202c182ffe45425af6447047caf76c071123d1e4aa2ea38b5cb30bd7741"
+    },
+    {
+      "step": "request_assessment",
+      "tx": "0x9a65d899f6d6821379628c52ce3ddd12417895b0f666ec99316b0dab5185549c"
+    },
+    {
+      "step": "request_assessment",
+      "case_id": "C3",
+      "assessment_id": "A2"
+    },
+    {
+      "step": "execute_assessment",
+      "tx": "0x96137d2ad22852c5f37ce43c65ab3741b1a25c02e189eaa417a36c4874b08d78"
+    },
+    {
+      "step": "CASE1_OUTCOME",
+      "case_id": "C3",
+      "settled_outcome": "QUARANTINE",
+      "gate": "BLOCKED"
+    },
+    {
+      "step": "open_case",
+      "tx": "0x662af5a87baf9cc0db5dc2f1d5cc727787f530ec20f616a75f2a2e03d61faaae"
+    },
+    {
+      "step": "OPEN_CLEAR_CASE",
+      "case_id": "C4",
+      "product": "Aero-Puck AP-1150",
+      "lot": "LOT-9751",
+      "bulletin": "clear"
+    },
+    {
+      "step": "pin_source",
+      "tx": "0x0e0997deeb3f2850377a6651ecb2a991aa52fcd4572ff80067335b3e0f848505"
+    },
+    {
+      "step": "pin_source",
+      "tx": "0xcf97efef54d23baf1365b7f6f0b3c24823af015f24d2f3b2580e344bf50c7f86"
+    },
+    {
+      "step": "pin_source",
+      "tx": "0x7bc57fb3dfd97159053251163c4fa0c646ed0f875d8c5abf5447ad2a571d437f"
+    },
+    {
+      "step": "seal_packet",
+      "tx": "0xb7526d7a94b1b16116f0ad13ac11b83fc2ba4a98b91544e303452db8acfa610e"
+    },
+    {
+      "step": "seal_packet",
+      "case_id": "C4",
+      "packet_sha256": "a755c37f7f0fea56ad72a1d7e2755545d698badb2436fd6958a7bc4cf3672a46"
+    },
+    {
+      "step": "request_assessment",
+      "tx": "0xcdbe78ef359396f4cec91859f1b8edcf4310863aae67743ba064f3f745248dae"
+    },
+    {
+      "step": "request_assessment",
+      "case_id": "C4",
+      "assessment_id": "A3"
+    },
+    {
+      "step": "execute_assessment",
+      "tx": "0xea81e0cad989f89a8b8f6375f7281fd37d5bbfb287f314abbd0b9aefaded7460"
+    },
+    {
+      "step": "CASE2_OUTCOME",
+      "case_id": "C4",
+      "settled_outcome": "CLEAR",
+      "gate": "BLOCKED"
+    },
+    {
+      "step": "propose_reviewer",
+      "tx": "0x0c233c895799f35527e5a04d8cd85961a0037c04c594d94b1fd613ac928f2673"
+    },
+    {
+      "step": "accept_reviewer",
+      "tx": "0x9515ab7910f47120b5364feadcec41df7a6cf3592d4c44cb6e5f209dac4cc39a"
+    },
+    {
+      "step": "release_gate",
+      "tx": "0x903a60d6859492f88b45d2b08e14db7493eaf480d10c41f18a63321e72214b03"
+    },
+    {
+      "step": "GATE_RELEASED",
+      "case_id": "C4",
+      "released_at": "2026-10-21T08:17:22.012385Z"
+    },
+    {
+      "step": "CASE1_STILL_BLOCKED",
+      "case_id": "C3",
+      "gate": "BLOCKED"
+    }
+  ]
+}

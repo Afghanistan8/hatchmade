@@ -79,6 +79,44 @@ The deploy script refuses to finish unless `get_protocol_info` answers
 with `hatchmade-gate-1`. Watch the contract on the explorer:
 https://explorer-studio.genlayer.com/address/0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B
 
+## The Studionet read rate limit, and how the run gets past it
+
+The hosted RPC throttles anonymous reads: `gen_call` executions measure
+`x-ratelimit-bucket: standard` with a **30 requests / minute** window, and
+an over-quota client gets `Rate limit exceeded: 30 requests per minute`.
+Two facts learned from the gateway itself shape the answer:
+
+1. **The limit is per HTTP request, not per call.** A POST carrying a
+   JSON-RPC *batch* of N `gen_call` requests consumes one slot: measured
+   live, a single call moved `x-ratelimit-remaining` from 22 to 21, and a
+   one-POST batch of three moved it from 22 to 21 again while answering
+   all three (this also rules it out as a coincidence of window edges.
+   Repeatedly reproduced.)
+2. **An API key lifts the quota.** The Studio app attaches the key saved
+   at `studio.genlayer.com/settings` to every request as the HTTP header
+   `X-API-Key` (checked in the served app bundle: `settingsStore.apiKey`),
+   and the settings page itself states that without a key the anonymous
+   limits apply.
+
+What the project does with that:
+
+- `scripts/lib/rpc-batch.mjs` wraps `globalThis.fetch` for POSTs to the
+  RPC only: concurrent `gen_call`s merge into one batched POST and each
+  waiter receives its own single-entry response shaped exactly like the
+  gateway's, so the SDK transport parses it unchanged. A 429 or a gateway
+  outage retries with backoff inside the flush. It also sends
+  `HATCHMADE_STUDIO_API_KEY` (when set) as `X-API-Key` — this is an RPC
+  quota key, not wallet material, and the scripts never hold keys.
+- `scripts/verify.mjs` issues its reads in waves. Twenty-six on-chain
+  reads land in **four HTTP POSTs** (two singles + two batches of
+  twelve), comfortably inside the anonymous quota.
+- The web console gets the twin shim (`web/lib/rpc-batch.ts`, installed
+  in `web/lib/client.ts`), so its parallel page reads ride the same
+  batching. It optionally reads `NEXT_PUBLIC_HATCHMADE_STUDIO_API_KEY`
+  for the authenticated bucket.
+- Notes on limits are the *read* path only — consensus writes are no
+  cheaper to fake, and nothing here batches them.
+
 ## Notes picked up during integration (worth keeping)
 
 - The RPC answers only checksummed addresses; lowercase hex reads back

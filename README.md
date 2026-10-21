@@ -61,10 +61,13 @@ own keystore; scripts never hold keys):
     node scripts/live.mjs          # full scenario: freeze → assess → release
     node scripts/verify.mjs        # recompute digests from public views
 
-The scenario opens two cases on the deployed gate — one inside an active
-recall (quarantined, gate blocked) and one outside it (clear, then
-appointed, accepted, and released by an independent reviewer) — and writes
-`scripts/out/live-<timestamp>.json`.
+The scenario adopts any interrupted case where it stopped, then opens the
+ones that are missing — one inside an active recall (quarantined, gate
+blocked) and one outside it (clear, then appointed, accepted, and
+released by an independent reviewer) — and writes
+`scripts/out/live-<timestamp>.json`. Reads are batched so the hosted
+RPC's 30-requests-per-minute read quota is not in the way: details in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Design in one screen
 
