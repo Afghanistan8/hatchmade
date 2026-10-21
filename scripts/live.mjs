@@ -139,14 +139,16 @@ function writeTx(contract, method, args) {
     "--retries", String(wait_defaults.retries),
     "--rpc", RPC]);
   const waitReceipt = parseJsonLoose(waited.out + "\n" + waited.err) || {};
-  // Failure detection runs over the raw CLI text, whose object literals have
-  // bare keys and single-quoted values, so no quoting assumption is built in.
+  // Failure detection runs over the raw CLI text. The receipt stream also
+  // contains benign `execution_result: 'ERROR'` entries from validators
+  // cancelled after quorum, so the real failure signal is the runner's
+  // `exit_code 1`, which only a genuine contract refusal produces.
   const blob = JSON.stringify(waitReceipt) + waited.out + waited.err;
   if (/CANCELED|UNDETERMINED/i.test(blob) && !/FINALIZED/.test(blob)) {
     fail(method, `tx ${tx} did not settle: ${blob.slice(0, 400)}`);
   }
-  if (/execution_result['\"]?\s*:\s*['\"]?ERROR/i.test(blob)) {
-    const refusal = blob.match(/\[(?:[A-Z_]{2,}\])[^'\"\\]{0,160}/);
+  if (/exit_code 1|AmV4aXRfY29kZSAx/.test(blob)) {
+    const refusal = blob.match(/\[(?:[A-Z_]{2,})\][^'"\n\\]{0,160}/);
     fail(method,
       `tx ${tx} was refused by the contract${refusal ? `: ${refusal[0]}` : " (execution error)"}`);
   }

@@ -343,11 +343,9 @@ export default function CaseConsole() {
             {assessments.map((a) => (
               <AssessmentBlock
                 key={a.assessment_id}
-                case_id={c.case_id}
                 a={a}
                 onExecute={() => act("execute_assessment", [a.assessment_id])}
                 busy={busy}
-                loadBody={loadBody}
               />
             ))}
           </div>
@@ -500,13 +498,11 @@ function SourceRow({
 }
 
 function AssessmentBlock({
-  case_id, a, onExecute, busy, loadBody,
+  a, onExecute, busy,
 }: {
-  case_id: string;
   a: Assessment;
   onExecute?: () => void;
   busy: string | null;
-  loadBody: (sid: string) => Promise<any>;
 }) {
   const finalized = a.status === "FINALIZED";
   const requested = a.status === "REQUESTED";

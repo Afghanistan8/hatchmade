@@ -11,6 +11,9 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // Every value crossing the GenLayer calldata boundary is dynamically
+  // typed; the code keeps one unmap() normalization point rather than
+  // mirroring the contract SDK's loose shapes in TypeScript.
   {
     ignores: [
       "node_modules/**",
@@ -19,6 +22,11 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
     ],
+  },
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
   },
 ];
 

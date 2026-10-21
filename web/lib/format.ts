@@ -35,13 +35,14 @@ export function sameAccount(a?: string | null, b?: string | null): boolean {
   return !!a && !!b && a.toLowerCase() === b.toLowerCase();
 }
 
-export function stripCode(message: string): { code: string; text: string } {
-  const m = message.match(/\[([A-Z_]+)\]\s*(.*)/s);
-  if (!m) return { code: "", text: message };
-  return { code: m[1], text: m[2] };
-}
-
 export function truncate(text: string, max = 300): string {
   if (!text) return "";
   return text.length <= max ? text : `${text.slice(0, max)}…`;
+}
+
+export function stripCode(message: string): { code: string; text: string } {
+  const normalized = message.replace(/\s+/g, " ");
+  const m = normalized.match(/\[([A-Z_]{2,})\]\s*(.*)/);
+  if (!m) return { code: "", text: normalized };
+  return { code: m[1], text: m[2] };
 }

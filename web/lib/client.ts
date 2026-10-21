@@ -4,7 +4,6 @@
 // writes need an EIP-1193 wallet provider, which the caller supplies.
 
 import { createClient, chains } from "genlayer-js";
-import type { GenLayerClient, GenLayerChain } from "genlayer-js";
 import { CONTRACT_ADDRESS } from "./config";
 import { unmap } from "./format";
 
@@ -14,7 +13,7 @@ export type Eip1193 = {
   removeListener?: (event: string, listener: (...args: any[]) => void) => void;
 };
 
-export type Client = GenLayerClient<GenLayerChain>;
+export type Client = ReturnType<typeof createClient>;
 
 export function rpcClient(): Client {
   return createClient({ chain: chains.studionet }) as unknown as Client;

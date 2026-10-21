@@ -9,7 +9,7 @@ import { read, write } from "@/lib/client";
 import { useWallet } from "@/lib/wallet";
 import { Card, Gate, Note, PageHead, Outcome, Empty, Badge } from "@/components/ui";
 import { ERROR_LEGEND } from "@/lib/config";
-import { sameAccount, short, stripCode } from "@/lib/format";
+import { short, stripCode } from "@/lib/format";
 
 type CaseRow = {
   case_id: string;

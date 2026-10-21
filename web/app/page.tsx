@@ -164,12 +164,12 @@ export default function Home() {
           <div className="rounded-lg border border-zinc-800 p-3">
             <div className="mb-1 font-mono text-[11px] text-zinc-200">the reviewer only opens</div>
             An independent reviewer — appointed after a CLEAR, and appointed by
-            the case opener, never from the opener's own address or a source
-            provider's — can release the gate exactly once.
+            the case opener, never from the opener&apos;s own address or a source
+            provider&apos;s — can release the gate exactly once.
           </div>
           <div className="rounded-lg border border-zinc-800 p-3">
             <div className="mb-1 font-mono text-[11px] text-zinc-200">nobody upgrades</div>
-            No owner, no admin, no pause. Upgrades don't exist after deploy:
+            No owner, no admin, no pause. Upgrades don&apos;t exist after deploy:
             fix or replace means a new contract with a new address. No method
             moves funds of any kind.
           </div>
