@@ -47,9 +47,13 @@ const HOSTS = {
   logistics: "cdn.statically.io",
 };
 
+// The clear bulletin is a REGULATOR document, so it is served from the
+// REGULATOR-bound host — the kind of a pinned source is the kind of its
+// host's authority (R-AUT-2), and a packet without a REGULATOR source
+// cannot seal (R-FRZ-1).
 const FIXTURES = {
   recall: { url: `${FIX_BASE_RAW}/regulator-bulletin-recall-lot9751.txt` },
-  clear: { url: `${FIX_BASE_JSD}/regulator-bulletin-clear-lot9751.txt` },
+  clear: { url: `${FIX_BASE_RAW}/regulator-bulletin-clear-lot9751.txt` },
   notice: { url: `${FIX_BASE_JSD}/manufacturer-notice.txt` },
   manifest: { url: `${FIX_BASE_STAT}/outbound-manifest-lot9751.txt` },
 };
@@ -71,8 +75,21 @@ async function rpc(method, params = []) {
   return json.result;
 }
 
+// The genlayer CLI is a node script; run its entry directly. Going through
+// a shell (cmd.exe + npm shims) re-flowed newlines inside string arguments,
+// which silently changed pinned bytes so the panel legitimately flagged
+// DIGEST_MISMATCH; direct argv transport is byte-faithful.
+const GENLAYER_JS = path.join(
+  process.env.APPDATA || "", "npm", "node_modules", "genlayer", "dist", "index.js",
+);
+
 function cli(args, opts = {}) {
-  const r = spawnSync("genlayer", args, { encoding: "utf8", shell: true, ...opts });
+  const withShell = !existsSync(GENLAYER_JS);
+  const argv = withShell ? ["genlayer", ...args] : [GENLAYER_JS, ...args];
+  const r = spawnSync(
+    withShell ? "genlayer" : process.execPath, argv,
+    { encoding: "utf8", shell: withShell, ...opts },
+  );
   return { code: r.status, out: (r.stdout || "") + "", err: (r.stderr || "") + "" };
 }
 
@@ -139,16 +156,16 @@ function writeTx(contract, method, args) {
     "--retries", String(wait_defaults.retries),
     "--rpc", RPC]);
   const waitReceipt = parseJsonLoose(waited.out + "\n" + waited.err) || {};
-  // Failure detection runs over the raw CLI text. The receipt stream also
-  // contains benign `execution_result: 'ERROR'` entries from validators
-  // cancelled after quorum, so the real failure signal is the runner's
-  // `exit_code 1`, which only a genuine contract refusal produces.
+  // Failure detection runs over the raw CLI text. A genuine contract
+  // refusal carries a rollback with a bracketed payload; validators
+  // cancelled after quorum also print `execution_result: ERROR` in
+  // perfectly good transactions, so that shape alone proves nothing.
   const blob = JSON.stringify(waitReceipt) + waited.out + waited.err;
   if (/CANCELED|UNDETERMINED/i.test(blob) && !/FINALIZED/.test(blob)) {
     fail(method, `tx ${tx} did not settle: ${blob.slice(0, 400)}`);
   }
-  if (/exit_code 1|AmV4aXRfY29kZSAx/.test(blob)) {
-    const refusal = blob.match(/\[(?:[A-Z_]{2,})\][^'"\n\\]{0,160}/);
+  const refusal = blob.match(/payload\s*:?\s*['"]?\[(?:[A-Z_]{2,})\][^'"]{0,160}/);
+  if (refusal || /exit_code 1|AmV4aXRfY29kZSAx/.test(blob)) {
     fail(method,
       `tx ${tx} was refused by the contract${refusal ? `: ${refusal[0]}` : " (execution error)"}`);
   }
