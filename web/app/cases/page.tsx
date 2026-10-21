@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { read, write } from "@/lib/client";
 import { useWallet } from "@/lib/wallet";
-import { Card, Gate, Note, PageHead, Outcome, Empty, Badge } from "@/components/ui";
+import { Card, Gate, Note, PageHead, Outcome, Empty, Badge, inputCls, btnPrimary } from "@/components/ui";
 import { ERROR_LEGEND } from "@/lib/config";
 import { short, stripCode } from "@/lib/format";
 
@@ -87,26 +87,30 @@ export default function CasesPage() {
       >
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <label className="block">
-            <span className="mb-1 block text-[11px] uppercase tracking-wider text-zinc-500">product</span>
+            <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+              product
+            </span>
             <input
               value={product}
               onChange={(e) => setProduct(e.target.value)}
               maxLength={120}
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 focus:border-emerald-700 focus:outline-none"
+              className={inputCls}
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-[11px] uppercase tracking-wider text-zinc-500">lot label</span>
+            <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+              lot label
+            </span>
             <input
               value={lot}
               onChange={(e) => setLot(e.target.value)}
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 font-mono text-sm uppercase text-zinc-100 focus:border-emerald-700 focus:outline-none"
+              className={`${inputCls} uppercase`}
             />
           </label>
           <button
             onClick={openCase}
             disabled={busy}
-            className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            className={`${btnPrimary} h-[38px] px-5`}
           >
             {busy ? "in consensus…" : "Open case"}
           </button>
@@ -131,23 +135,36 @@ export default function CasesPage() {
       )}
 
       {cases && cases.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {cases.map((c) => (
             <Link
               key={c.case_id}
               href={`/cases/${c.case_id}`}
-              className="block rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+              className="group block rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-4 transition-colors hover:border-zinc-700 hover:bg-zinc-900/70"
             >
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <span className="font-mono text-sm text-emerald-400">{c.case_id}</span>
+                <span className="font-mono text-sm text-emerald-400 transition-colors group-hover:text-emerald-300">
+                  {c.case_id}
+                </span>
                 <span className="text-sm text-zinc-200">{c.product}</span>
-                <span className="font-mono text-xs text-zinc-400">{c.lot}</span>
+                <span className="font-mono text-xs text-zinc-500">{c.lot}</span>
+                {c.created_at && (
+                  <span className="hidden font-mono text-[10px] text-zinc-600 lg:inline">
+                    opened {String(c.created_at).slice(0, 10)}
+                  </span>
+                )}
                 <div className="ml-auto flex flex-wrap items-center gap-2">
                   <Badge>{c.state}</Badge>
                   <Outcome value={c.settled_outcome} />
                   <Gate value={c.released ? "RELEASED" : "BLOCKED"} />
                   <span className="font-mono text-[10px] text-zinc-600">
                     opener {short(c.opener, 4)}
+                  </span>
+                  <span
+                    aria-hidden
+                    className="text-xs text-zinc-700 transition-colors group-hover:text-zinc-400"
+                  >
+                    →
                   </span>
                 </div>
               </div>

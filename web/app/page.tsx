@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { read } from "@/lib/client";
-import { Card, Note, PageHead, Badge, Gate, Outcome } from "@/components/ui";
+import { Card, Note, PageHead, Badge, Gate, Outcome, Stat } from "@/components/ui";
 import { CONTRACT_ADDRESS, EXPLORER } from "@/lib/config";
 import { short } from "@/lib/format";
 
@@ -62,33 +62,46 @@ export default function Home() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card title="Gate contract">
-          <div className="space-y-3 text-sm">
+          <div className="space-y-4 text-sm">
             <a
-              className="font-mono text-xs text-emerald-400 underline decoration-dotted underline-offset-4 break-all"
+              className="block break-all font-mono text-xs text-emerald-400 underline decoration-emerald-800 decoration-dotted underline-offset-4 transition-colors hover:text-emerald-300"
               href={`${EXPLORER}/address/${CONTRACT_ADDRESS}`}
               target="_blank"
               rel="noreferrer"
             >
               {CONTRACT_ADDRESS}
             </a>
-            <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="grid grid-cols-3 gap-2.5">
               <Stat label="cases" value={info?.counts?.case} />
               <Stat label="frozen" value={info?.counts?.authority} labelRight="authorities" />
               <Stat label="assessments" value={info?.counts?.assessment} />
             </div>
-            <div className="pt-1">
+            <div>
               <Badge>{info?.schema ?? "…"}</Badge>
             </div>
           </div>
         </Card>
 
         <Card title="How an outcome settles">
-          <ol className="space-y-2.5 text-xs leading-relaxed text-zinc-300">
-            <li><b className="text-zinc-100">1 · Freeze</b> — the packet seals all three authority kinds as pinned bytes with digests. After seal, nothing in it can change.</li>
-            <li><b className="text-zinc-100">2 · Inspect</b> — validators fetch each source themselves. Live bytes are checked against the pins before anything else is believed.</li>
-            <li><b className="text-zinc-100">3 · Read</b> — each node reads the regulator bulletin itself; a verdict whose quoted basis is not in the bulletin is held at UNCERTAIN.</li>
-            <li><b className="text-zinc-100">4 · Settle</b> — the outcome only ever hardens: a case later proves worse, never better.</li>
-            <li><b className="text-zinc-100">5 · Release</b> — a reviewer who is nobody in the case can open the gate once. Nobody can re-close or reopen it.</li>
+          <ol className="space-y-3 text-xs leading-relaxed text-zinc-400">
+            {[
+              ["Freeze", "the packet seals all three authority kinds as pinned bytes with digests. After seal, nothing in it can change."],
+              ["Inspect", "validators fetch each source themselves. Live bytes are checked against the pins before anything else is believed."],
+              ["Read", "each node reads the regulator bulletin itself; a verdict whose quoted basis is not in the bulletin is held at UNCERTAIN."],
+              ["Settle", "the outcome only ever hardens: a case later proves worse, never better."],
+              ["Release", "a reviewer who is nobody in the case can open the gate once. Nobody can re-close or reopen it."],
+            ].map(([term, text], i) => (
+              <li key={term} className="flex gap-3">
+                <span className="w-5 shrink-0 pt-px text-right font-mono text-[10px] leading-5 text-emerald-600">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span>
+                  <span className="font-medium text-zinc-100">{term}</span>
+                  {" — "}
+                  {text}
+                </span>
+              </li>
+            ))}
           </ol>
         </Card>
 
@@ -102,19 +115,21 @@ export default function Home() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card title="Outcomes and states" hint="as stored in the deployed code">
-          <div className="space-y-4 text-sm">
+          <div className="space-y-5 text-sm">
             <div>
-              <div className="mb-2 text-[11px] uppercase tracking-wider text-zinc-500">outcomes</div>
+              <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+                outcomes
+              </div>
               <div className="flex flex-wrap gap-2">
                 {["NONE", "CLEAR", "REVIEW", "QUARANTINE"].map((o) => (
-                  <span key={o} className="flex items-center gap-1.5">
-                    <Outcome value={o} />
-                  </span>
+                  <Outcome key={o} value={o} />
                 ))}
               </div>
             </div>
             <div>
-              <div className="mb-2 text-[11px] uppercase tracking-wider text-zinc-500">gate</div>
+              <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+                gate
+              </div>
               <div className="flex gap-2">
                 {["BLOCKED", "RELEASED"].map((g) => (
                   <Gate key={g} value={g} />
@@ -122,22 +137,30 @@ export default function Home() {
               </div>
             </div>
             <div>
-              <div className="mb-2 text-[11px] uppercase tracking-wider text-zinc-500">authority kinds</div>
+              <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+                authority kinds
+              </div>
               <div className="flex flex-wrap gap-2">
-                {(info?.authority_kinds ?? []).map((k) => <Badge key={k}>{k}</Badge>)}
+                {(info?.authority_kinds ?? []).map((k) => (
+                  <Badge key={k}>{k}</Badge>
+                ))}
               </div>
             </div>
             <div>
-              <div className="mb-2 text-[11px] uppercase tracking-wider text-zinc-500">case states</div>
+              <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+                case states
+              </div>
               <div className="flex flex-wrap gap-2">
-                {(info?.case_states ?? []).map((s) => <Badge key={s}>{s}</Badge>)}
+                {(info?.case_states ?? []).map((s) => (
+                  <Badge key={s}>{s}</Badge>
+                ))}
               </div>
             </div>
           </div>
         </Card>
 
         <Card title="Start where the work is">
-          <div className="space-y-3 text-sm">
+          <div className="space-y-2.5 text-sm">
             <LinkRow href="/cases" title="Cases" text="Open a case, freeze its packet, run an assessment, watch gates." />
             <LinkRow href="/authorities" title="Authorities" text="Hostnames bound to authority kinds; first come, never re-bound." />
             <LinkRow href="/verify" title="Verify" text="Recompute packet and decision digests in this browser." />
@@ -147,49 +170,27 @@ export default function Home() {
       </div>
 
       <Card title="Trust placement" hint="who is trusted with what">
-        <div className="grid gap-3 text-xs leading-relaxed text-zinc-300 md:grid-cols-2">
-          <div className="rounded-lg border border-zinc-800 p-3">
-            <div className="mb-1 font-mono text-[11px] text-zinc-200">the packer only documents</div>
-            The operator opens cases and pins bytes. Nothing they write is
-            believed about the recall: validators fetch and read the sources
-            themselves. The packer cannot wear a regulator badge — kinds come
-            from host bindings, held by whoever bound the host first.
-          </div>
-          <div className="rounded-lg border border-zinc-800 p-3">
-            <div className="mb-1 font-mono text-[11px] text-zinc-200">the panel only reads</div>
-            Validators fetch, verify, and read. Their agreement is over a
-            decision digest of per-source decisions; a node that sees a
-            different world refuses and the round dies without writing.
-          </div>
-          <div className="rounded-lg border border-zinc-800 p-3">
-            <div className="mb-1 font-mono text-[11px] text-zinc-200">the reviewer only opens</div>
-            An independent reviewer — appointed after a CLEAR, and appointed by
-            the case opener, never from the opener&apos;s own address or a source
-            provider&apos;s — can release the gate exactly once.
-          </div>
-          <div className="rounded-lg border border-zinc-800 p-3">
-            <div className="mb-1 font-mono text-[11px] text-zinc-200">nobody upgrades</div>
-            No owner, no admin, no pause. Upgrades don&apos;t exist after deploy:
-            fix or replace means a new contract with a new address. No method
-            moves funds of any kind.
-          </div>
+        <div className="grid gap-3 text-xs leading-relaxed text-zinc-400 md:grid-cols-2">
+          {[
+            ["the packer only documents", <>The operator opens cases and pins bytes. Nothing they write is believed about the recall: validators fetch and read the sources themselves. The packer cannot wear a regulator badge — kinds come from host bindings, held by whoever bound the host first.</>],
+            ["the panel only reads", <>Validators fetch, verify, and read. Their agreement is over a decision digest of per-source decisions; a node that sees a different world refuses and the round dies without writing.</>],
+            ["the reviewer only opens", <>An independent reviewer — appointed after a CLEAR, and appointed by the case opener, never from the opener&apos;s own address or a source provider&apos;s — can release the gate exactly once.</>],
+            ["nobody upgrades", <>No owner, no admin, no pause. Upgrades don&apos;t exist after deploy: fix or replace means a new contract with a new address. No method moves funds of any kind.</>],
+          ].map(([head, body], i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-zinc-800/70 bg-zinc-950/30 p-3.5 transition-colors hover:border-zinc-700/70"
+            >
+              <div className="mb-1.5 font-mono text-[11px] text-zinc-300">{head}</div>
+              {body}
+            </div>
+          ))}
         </div>
       </Card>
 
-      <p className="text-center font-mono text-[11px] text-zinc-600">
+      <p className="pt-2 text-center font-mono text-[11px] text-zinc-600">
         {short("hatchmade-gate-1", 40)} · word-run grounding {info?.word_run ?? "?"} consecutive words
       </p>
-    </div>
-  );
-}
-
-function Stat({ label, value, labelRight }: { label: string; value?: number; labelRight?: string }) {
-  return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2.5">
-      <div className="font-mono text-lg text-zinc-100">{value ?? "—"}</div>
-      <div className="text-[10px] uppercase tracking-wider text-zinc-500">
-        {labelRight ?? label}
-      </div>
     </div>
   );
 }
@@ -198,9 +199,17 @@ function LinkRow({ href, title, text }: { href: string; title: string; text: str
   return (
     <Link
       href={href}
-      className="block rounded-lg border border-zinc-800 bg-zinc-900/70 px-4 py-3 hover:border-zinc-700 hover:bg-zinc-900"
+      className="group block rounded-lg border border-zinc-800/80 bg-zinc-950/30 px-4 py-3 transition-colors hover:border-zinc-700 hover:bg-zinc-900/60"
     >
-      <div className="text-sm font-medium text-zinc-100">{title}</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-medium text-zinc-100">{title}</div>
+        <span
+          aria-hidden
+          className="text-xs text-zinc-600 transition-colors group-hover:text-emerald-400"
+        >
+          →
+        </span>
+      </div>
       <div className="mt-0.5 text-xs text-zinc-500">{text}</div>
     </Link>
   );

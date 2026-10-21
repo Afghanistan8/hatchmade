@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { read, write } from "@/lib/client";
 import { useWallet } from "@/lib/wallet";
-import { Card, Empty, Note, PageHead, Badge } from "@/components/ui";
+import { Card, Empty, Note, PageHead, Badge, inputCls, selectCls, btnPrimary } from "@/components/ui";
 import { ERROR_LEGEND } from "@/lib/config";
 import { sameAccount, short, stripCode } from "@/lib/format";
 
@@ -80,20 +80,20 @@ export default function AuthoritiesPage() {
       >
         <div className="grid gap-3 sm:grid-cols-[1fr_180px_1fr_auto] sm:items-end">
           <label className="block">
-            <span className="mb-1 block text-[11px] uppercase tracking-wider text-zinc-500">hostname</span>
+            <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">hostname</span>
             <input
               value={host}
               onChange={(e) => setHost(e.target.value)}
               placeholder="bulletins.example.gov"
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 focus:border-emerald-700 focus:outline-none"
+              className={inputCls}
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-[11px] uppercase tracking-wider text-zinc-500">kind</span>
+            <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">kind</span>
             <select
               value={kind}
               onChange={(e) => setKind(e.target.value)}
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-100 focus:border-emerald-700 focus:outline-none"
+              className={selectCls}
             >
               <option>REGULATOR</option>
               <option>MANUFACTURER</option>
@@ -101,18 +101,18 @@ export default function AuthoritiesPage() {
             </select>
           </label>
           <label className="block">
-            <span className="mb-1 block text-[11px] uppercase tracking-wider text-zinc-500">note (optional)</span>
+            <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">note (optional)</span>
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={240}
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-100 focus:border-emerald-700 focus:outline-none"
+              className={inputCls}
             />
           </label>
           <button
             onClick={bind}
             disabled={busy || !host}
-            className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            className={`${btnPrimary} h-[38px] px-5`}
           >
             {busy ? "in consensus…" : "Bind"}
           </button>
@@ -138,31 +138,33 @@ export default function AuthoritiesPage() {
       )}
 
       {rows && rows.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/70 text-[10px] uppercase tracking-wider text-zinc-500">
-                <th className="px-4 py-2.5">#</th>
-                <th className="px-4 py-2.5">hostname</th>
-                <th className="px-4 py-2.5">kind</th>
-                <th className="px-4 py-2.5">bound by</th>
-                <th className="px-4 py-2.5">note</th>
-                <th className="px-4 py-2.5">bound at</th>
+              <tr className="border-b border-zinc-800">
+                {["#", "hostname", "kind", "bound by", "note", "bound at"].map((h) => (
+                  <th key={h} className="px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {rows.map((a) => (
-                <tr key={a.hostname} className="border-b border-zinc-900">
-                  <td className="px-4 py-2.5 font-mono text-zinc-500">{a.seq}</td>
+                <tr
+                  key={a.hostname}
+                  className="border-b border-zinc-800/60 transition-colors last:border-0 hover:bg-zinc-950/40"
+                >
+                  <td className="px-4 py-2.5 font-mono tabular-nums text-zinc-600">{a.seq}</td>
                   <td className="px-4 py-2.5 font-mono text-zinc-200">{a.hostname}</td>
                   <td className="px-4 py-2.5"><Badge>{a.kind}</Badge></td>
-                  <td className="px-4 py-2.5 font-mono text-zinc-400">
+                  <td className={`px-4 py-2.5 font-mono tabular-nums ${sameAccount(a.provider, wallet.address) ? "text-emerald-400" : "text-zinc-500"}`}>
                     {sameAccount(a.provider, wallet.address)
                       ? "you"
                       : short(a.provider, 4)}
                   </td>
                   <td className="px-4 py-2.5 text-zinc-400">{a.note}</td>
-                  <td className="px-4 py-2.5 font-mono text-zinc-600">{a.bound_at}</td>
+                  <td className="px-4 py-2.5 font-mono text-[10px] text-zinc-600">{a.bound_at}</td>
                 </tr>
               ))}
             </tbody>

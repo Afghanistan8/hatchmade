@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { read } from "@/lib/client";
 import { packetDigest, decisionDigest } from "@/lib/digest";
-import { Card, Empty, Note, PageHead, Badge } from "@/components/ui";
+import { Card, Empty, Note, PageHead, Badge, btnChip } from "@/components/ui";
 
 type Verdict = {
   assessment_id: string;
@@ -98,10 +98,10 @@ export default function VerifyPage() {
               <button
                 key={cid}
                 onClick={() => pick(cid)}
-                className={`rounded-md border px-3 py-1.5 font-mono text-xs ${
+                className={`rounded-full border px-3.5 py-1.5 font-mono text-xs transition-colors ${
                   picked === cid
-                    ? "border-emerald-700 bg-emerald-950/40 text-emerald-300"
-                    : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
+                    ? "border-emerald-700 bg-emerald-950/50 text-emerald-300"
+                    : "border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
                 }`}
               >
                 {cid}
@@ -116,7 +116,7 @@ export default function VerifyPage() {
       {picked && packet && (
         <Card title={`Case ${picked} — packet`} hint={`packet ${packet.packet_sha256?.slice(0, 16)}…`}>
           <div className="space-y-4">
-            <div className={`rounded-lg border px-4 py-3 font-mono text-sm ${
+            <div className={`rounded-lg border px-4 py-3 font-mono text-xs break-all ${
               packetCheck?.ok
                 ? "border-emerald-800/60 bg-emerald-950/30 text-emerald-300"
                 : "border-rose-800/60 bg-rose-950/30 text-rose-300"
@@ -126,24 +126,21 @@ export default function VerifyPage() {
 
             <ul className="space-y-2 text-xs">
               {(packet.sources ?? []).map((s: any) => (
-                <li key={s.source_id} className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2">
+                <li key={s.source_id} className="rounded-lg border border-zinc-800/70 bg-zinc-950/40 px-3.5 py-2.5">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="font-mono text-zinc-200">{s.source_id}</span>
                     <Badge>{s.kind}</Badge>
                     <span className="font-mono text-zinc-500">{s.host}</span>
-                    <span className="text-zinc-500">{s.url}</span>
-                    <span className="ml-auto font-mono text-zinc-400">
+                    <span className="break-all text-zinc-500">{s.url}</span>
+                    <span className="ml-auto font-mono break-all text-[10px] text-zinc-600">
                       sha256 {s.pinned_sha256} · {s.byte_len} B
                     </span>
-                    <button
-                      className="rounded-md border border-zinc-700 px-2 py-0.5 text-[10px] text-zinc-300 hover:bg-zinc-800"
-                      onClick={() => showBody(s.source_id)}
-                    >
+                    <button className={btnChip} onClick={() => showBody(s.source_id)}>
                       pinned bytes
                     </button>
                   </div>
                   {bodies[s.source_id] && (
-                    <pre className="scroll-thin mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded-md border border-zinc-800 bg-zinc-950 p-2 text-[10px] text-zinc-300">
+                    <pre className="scroll-thin mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-800/70 bg-zinc-950 p-3 text-[10px] leading-relaxed text-zinc-400">
                       {bodies[s.source_id]}
                     </pre>
                   )}
@@ -164,7 +161,7 @@ export default function VerifyPage() {
           <div className="space-y-3">
             {verdicts.map((v) => (
               <div key={v.assessment_id}
-                className={`rounded-lg border px-4 py-3 font-mono text-xs ${
+                className={`rounded-lg border px-4 py-3 font-mono text-xs break-all ${
                   v.ok
                     ? "border-emerald-800/60 bg-emerald-950/30 text-emerald-300"
                     : "border-rose-800/60 bg-rose-950/30 text-rose-300"

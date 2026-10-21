@@ -5,12 +5,70 @@
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
 }
 
-::selection {
-  background: rgba(16, 185, 129, 0.25);
+/* Dark color scheme for form controls and native widgets. */
+html {
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
 }
 
-/* thin scrollbars inside panes */
+body {
+  background: #09090b;
+  color: #fafafa;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(16, 185, 129, 0.28);
+  color: #ecfdf5;
+}
+
+/* One visible focus style everywhere: a thin emerald ring. */
+:focus-visible {
+  outline: 2px solid rgba(52, 211, 153, 0.55);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Fixed-height header + sticky-safe scroll: reserve the scrollbar so the
+   layout does not shift between pages with and without scroll. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Scrollbars: thin, dark, unobtrusive — everywhere and inside panes. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Thin scrollbars inside code panes intentionally stay darker. */
 .scroll-thin {
   scrollbar-width: thin;
-  scrollbar-color: #3f3f46 transparent;
+  scrollbar-color: #1f2937 transparent;
+}
+
+/* Respect reduced motion for the app's hover/transition language. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

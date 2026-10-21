@@ -11,6 +11,7 @@ import { read, write } from "@/lib/client";
 import { useWallet } from "@/lib/wallet";
 import {
   Card, Gate, Note, PageHead, Outcome, Badge, Field,
+  inputCls, btnPrimary, btnGhost, btnAccent, btnChip,
 } from "@/components/ui";
 import { ERROR_LEGEND } from "@/lib/config";
 import { isTrue, sameAccount, short, stripCode, truncate } from "@/lib/format";
@@ -145,18 +146,18 @@ export default function CaseConsole() {
       {/* gate + identity row */}
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Card title="The gate" hint={`case ${c.state.toLowerCase()}`}>
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-zinc-500">state</div>
-              <div className="mt-1"><Gate value={c.released ? "RELEASED" : "BLOCKED"} /></div>
+              <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">state</div>
+              <div className="mt-1"><Gate value={c.released ? "RELEASED" : "BLOCKED"} large /></div>
             </div>
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-zinc-500">settled outcome</div>
-              <div className="mt-1"><Outcome value={c.settled_outcome} /></div>
+              <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">settled outcome</div>
+              <div className="mt-1"><Outcome value={c.settled_outcome} large /></div>
             </div>
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-zinc-500">reviewer</div>
-              <div className="mt-1 font-mono text-sm text-zinc-300">
+              <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">reviewer</div>
+              <div className="mt-1 font-mono text-sm tabular-nums text-zinc-300">
                 {c.reviewer ? short(c.reviewer) : "not appointed"}
               </div>
             </div>
@@ -170,11 +171,11 @@ export default function CaseConsole() {
             </ul>
           )}
           {c.released && (
-            <div className="mt-4 border-t border-zinc-800 pt-3">
-              <div className="text-[11px] uppercase tracking-wider text-zinc-500">release note</div>
-              <p className="mt-1 text-sm text-zinc-200">{c.release_note}</p>
+            <div className="mt-5 border-t border-zinc-800/70 pt-4">
+              <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">release note</div>
+              <p className="mt-1 text-sm leading-relaxed text-zinc-200">{c.release_note}</p>
               {c.released_at && (
-                <p className="mt-1 font-mono text-[10px] text-zinc-500">{c.released_at}</p>
+                <p className="mt-1.5 font-mono text-[10px] text-zinc-500">{c.released_at}</p>
               )}
             </div>
           )}
@@ -226,7 +227,7 @@ export default function CaseConsole() {
               )}
               <button
                 onClick={recomputePacket}
-                className="ml-auto rounded-md border border-zinc-700 px-2.5 py-1 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                className={`ml-auto ${btnChip}`}
               >
                 recompute in browser
               </button>
@@ -235,12 +236,12 @@ export default function CaseConsole() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-zinc-800 text-[10px] uppercase tracking-wider text-zinc-500">
-                    <th className="py-2 pr-3">source</th>
-                    <th className="py-2 pr-3">kind</th>
-                    <th className="py-2 pr-3">host</th>
-                    <th className="py-2 pr-3">pinned sha256</th>
-                    <th className="py-2 pr-3">bytes</th>
+                  <tr className="border-b border-zinc-800">
+                    <th className="py-2 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">source</th>
+                    <th className="py-2 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">kind</th>
+                    <th className="py-2 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">host</th>
+                    <th className="py-2 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">pinned sha256</th>
+                    <th className="py-2 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">bytes</th>
                     <th className="py-2" />
                   </tr>
                 </thead>
@@ -270,8 +271,8 @@ export default function CaseConsole() {
 
         {/* opener actions while assembling */}
         {open && isOpener && (
-          <div className="mt-5 space-y-3 border-t border-zinc-800 pt-4">
-            <div className="text-[11px] uppercase tracking-wider text-zinc-500">
+          <div className="mt-5 space-y-3 border-t border-zinc-800/70 pt-4">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
               opener actions — pin a source, then freeze
             </div>
             <div className="grid gap-3">
@@ -279,29 +280,29 @@ export default function CaseConsole() {
                 value={pinUrl}
                 onChange={(e) => setPinUrl(e.target.value)}
                 placeholder="https://… (host must be a bound authority)"
-                className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 focus:border-emerald-700 focus:outline-none"
+                className={inputCls}
               />
               <textarea
                 value={pinBody}
                 onChange={(e) => setPinBody(e.target.value)}
                 rows={4}
                 placeholder="the exact bytes of the source document"
-                className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 focus:border-emerald-700 focus:outline-none"
+                className={`${inputCls} scroll-thin resize-y`}
               />
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => act("pin_source", [c.case_id, pinUrl, pinBody], () => {
                     setPinUrl(""); setPinBody("");
                   })}
                   disabled={busy !== null || !pinUrl || !pinBody}
-                  className="rounded-lg border border-zinc-700 px-4 py-2 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+                  className={btnGhost}
                 >
                   {busy === "pin_source" ? "in consensus…" : "Pin source"}
                 </button>
                 <button
                   onClick={() => act("seal_packet", [c.case_id])}
                   disabled={busy !== null}
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+                  className={btnPrimary}
                 >
                   {busy === "seal_packet" ? "in consensus…" : "Freeze packet (seal)"}
                 </button>
@@ -318,15 +319,15 @@ export default function CaseConsole() {
         )}
 
         {(frozen || settled) && isOpener && (
-          <div className="mt-5 flex flex-wrap gap-2 border-t border-zinc-800 pt-4">
+          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-zinc-800/70 pt-4">
             <button
               onClick={() => act("request_assessment", [c.case_id])}
               disabled={busy !== null}
-              className="rounded-lg bg-sky-700 px-4 py-2 text-xs font-medium text-white hover:bg-sky-600 disabled:opacity-50"
+              className={btnAccent}
             >
               {busy === "request_assessment" ? "in consensus…" : "Request assessment"}
             </button>
-            <span className="self-center text-[11px] text-zinc-500">
+            <span className="text-[11px] text-zinc-500">
               binds this packet; any account may then execute it
             </span>
           </div>
@@ -368,7 +369,7 @@ export default function CaseConsole() {
           </Note>
         ) : reviewerState === "ACCEPTED" && isReviewer ? (
           <div className="space-y-3">
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs leading-relaxed text-zinc-400">
               You accepted the appointment for this case. Reading the packet and the
               live sources yourself is your work; the gate is one signature away.
             </p>
@@ -378,12 +379,12 @@ export default function CaseConsole() {
               rows={2}
               placeholder="release note (e.g. the basis you checked) — optional"
               maxLength={400}
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 focus:border-emerald-700 focus:outline-none"
+              className={`${inputCls} resize-y`}
             />
             <button
               onClick={() => act("release_gate", [c.case_id, releaseNote], () => setReleaseNote(""))}
               disabled={busy !== null}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+              className={btnPrimary}
             >
               {busy === "release_gate" ? "in consensus…" : "Release gate"}
             </button>
@@ -393,14 +394,14 @@ export default function CaseConsole() {
         ) : reviewerState === "PROPOSED" ? (
           <div className="space-y-3">
             <p className="text-xs text-zinc-400">
-              Proposed reviewer: <span className="font-mono">{short(c.reviewer)}</span>.
+              Proposed reviewer: <span className="font-mono text-zinc-200">{short(c.reviewer)}</span>.
               Proposed at {c.reviewer_proposed_at}.
             </p>
             {isReviewer ? (
               <button
                 onClick={() => act("accept_reviewer", [c.case_id])}
                 disabled={busy !== null}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+                className={btnPrimary}
               >
                 {busy === "accept_reviewer" ? "in consensus…" : "Accept appointment"}
               </button>
@@ -411,20 +412,20 @@ export default function CaseConsole() {
         ) : isOpener ? (
           <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
             <label className="block">
-              <span className="mb-1 block text-[11px] uppercase tracking-wider text-zinc-500">
+              <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
                 propose a reviewer address
               </span>
               <input
                 value={reviewerInput}
                 onChange={(e) => setReviewerInput(e.target.value)}
                 placeholder="0x… (must be someone else)"
-                className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 focus:border-emerald-700 focus:outline-none"
+                className={inputCls}
               />
             </label>
             <button
               onClick={() => act("propose_reviewer", [c.case_id, reviewerInput], () => setReviewerInput(""))}
               disabled={busy !== null || !reviewerInput}
-              className="rounded-lg border border-zinc-700 px-4 py-2 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+              className={`${btnGhost} h-[38px]`}
             >
               {busy === "propose_reviewer" ? "in consensus…" : "Propose"}
             </button>
@@ -476,23 +477,20 @@ function SourceRow({
         <td className="py-2 pr-3 font-mono text-zinc-400">{s.pinned_sha256?.slice(0, 18)}…</td>
         <td className="py-2 pr-3 font-mono text-zinc-400">{s.byte_len}</td>
         <td className="py-2 text-right">
-          <button
-            className="rounded-md border border-zinc-700 px-2 py-0.5 text-[10px] text-zinc-300 hover:bg-zinc-800"
-            onClick={toggle}
-          >
+          <button className={btnChip} onClick={toggle}>
             {open ? "hide" : "bytes"}
           </button>
         </td>
       </tr>
-      {open && (
-        <tr>
-          <td colSpan={6} className="pb-3">
-            <pre className="scroll-thin max-h-64 overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-[10px] leading-relaxed text-zinc-300">
-              {body?.content ?? "could not read the pinned body"}
-            </pre>
-          </td>
-        </tr>
-      )}
+        {open && (
+          <tr>
+            <td colSpan={6} className="pb-3">
+              <pre className="scroll-thin max-h-64 overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-800/70 bg-zinc-950 p-3 text-[10px] leading-relaxed text-zinc-400">
+                {body?.content ?? "could not read the pinned body"}
+              </pre>
+            </td>
+          </tr>
+        )}
     </>
   );
 }
@@ -508,7 +506,7 @@ function AssessmentBlock({
   const requested = a.status === "REQUESTED";
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+    <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 p-4">
       <div className="flex flex-wrap items-center gap-3">
         <span className="font-mono text-sm text-sky-400">{a.assessment_id}</span>
         <Badge>{a.status}</Badge>
@@ -516,11 +514,11 @@ function AssessmentBlock({
         <span className="ml-auto font-mono text-[10px] text-zinc-600">
           requested by {short(a.requested_by, 4)}
         </span>
-        {requested && onExecute && (
+          {requested && onExecute && (
           <button
             onClick={onExecute}
             disabled={busy !== null}
-            className="rounded-lg bg-sky-700 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-sky-600 disabled:opacity-50"
+            className="inline-flex items-center rounded-lg bg-sky-700 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm transition-colors hover:bg-sky-600 disabled:opacity-50"
           >
             {busy === "execute_assessment" ? "in consensus…" : "Execute (any account)"}
           </button>
@@ -548,23 +546,31 @@ function AssessmentBlock({
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[11px]">
               <thead>
-                <tr className="border-b border-zinc-800 text-[10px] uppercase tracking-wider text-zinc-500">
-                  <th className="py-1.5 pr-3">source</th>
-                  <th className="py-1.5 pr-3">fetched</th>
-                  <th className="py-1.5 pr-3">digest</th>
-                  <th className="py-1.5 pr-3">reader said</th>
-                  <th className="py-1.5 pr-3">held</th>
-                  <th className="py-1.5">effective</th>
+                <tr className="border-b border-zinc-800">
+                  <th className="py-1.5 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">source</th>
+                  <th className="py-1.5 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">fetched</th>
+                  <th className="py-1.5 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">digest</th>
+                  <th className="py-1.5 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">reader said</th>
+                  <th className="py-1.5 pr-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">held</th>
+                  <th className="py-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">effective</th>
                 </tr>
               </thead>
               <tbody>
                 {(a.decisions ?? []).map((d: any) => (
-                  <tr key={d.source_id} className="border-b border-zinc-900">
-                    <td className="py-1.5 pr-3 font-mono text-zinc-300">{d.source_id}</td>
-                    <td className="py-1.5 pr-3">{isTrue(d.fetch_ok) ? "✓" : "✕"}</td>
-                    <td className="py-1.5 pr-3">{isTrue(d.digest_match) ? "✓" : "✕"}</td>
-                    <td className="py-1.5 pr-3 font-mono text-zinc-300">{d.result}</td>
-                    <td className="py-1.5 pr-3">{isTrue(d.held) ? <span className="text-amber-400">held</span> : "—"}</td>
+                  <tr key={d.source_id} className="border-b border-zinc-800/60">
+                    <td className="py-1.5 pr-4 font-mono text-zinc-300">{d.source_id}</td>
+                    <td className="py-1.5 pr-4 font-mono">{isTrue(d.fetch_ok) ? (
+                      <span className="text-emerald-400">✓</span>
+                    ) : (
+                      <span className="text-rose-400">✕</span>
+                    )}</td>
+                    <td className="py-1.5 pr-4 font-mono">{isTrue(d.digest_match) ? (
+                      <span className="text-emerald-400">✓</span>
+                    ) : (
+                      <span className="text-rose-400">✕</span>
+                    )}</td>
+                    <td className="py-1.5 pr-4 font-mono text-zinc-300">{d.result}</td>
+                    <td className="py-1.5 pr-4">{isTrue(d.held) ? <span className="font-mono text-amber-400">held</span> : <span className="font-mono text-zinc-600">—</span>}</td>
                     <td className="py-1.5 font-mono text-zinc-200">{d.effective}</td>
                   </tr>
                 ))}
@@ -574,7 +580,7 @@ function AssessmentBlock({
 
           {(a.judgments ?? []).length > 0 && (
             <details className="text-[11px] text-zinc-400">
-              <summary className="cursor-pointer select-none hover:text-zinc-300">
+              <summary className="cursor-pointer select-none font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500 transition-colors hover:text-zinc-300">
                 why each reading was accepted or held
               </summary>
               <ul className="mt-2 space-y-2">
@@ -594,7 +600,7 @@ function AssessmentBlock({
 
           {(a.receipts ?? []).length > 0 && (
             <details className="text-[11px] text-zinc-400">
-              <summary className="cursor-pointer select-none hover:text-zinc-300">
+              <summary className="cursor-pointer select-none font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500 transition-colors hover:text-zinc-300">
                 fetch receipts (status, live bytes, digests)
               </summary>
               <ul className="mt-2 space-y-2">

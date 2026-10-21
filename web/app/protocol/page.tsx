@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { read } from "@/lib/client";
-import { Card, Note, PageHead, Badge } from "@/components/ui";
+import { Card, Note, PageHead, Badge, Stat } from "@/components/ui";
 import { ERROR_LEGEND, EXPLORER, CONTRACT_ADDRESS } from "@/lib/config";
 
 export default function ProtocolPage() {
@@ -38,13 +38,10 @@ export default function ProtocolPage() {
       {error && <Note>live values unavailable: {error}</Note>}
 
       <Card title="Ceilings" hint="enforced on chain, per record">
-        <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 text-xs sm:grid-cols-4">
           {limits ? (
             Object.entries(limits).map(([k, v]) => (
-              <div key={k} className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
-                <div className="font-mono text-base text-zinc-100">{String(v)}</div>
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500">{k.replace("max_", "")}</div>
-              </div>
+              <Stat key={k} label={k.replace("max_", "")} value={String(v)} />
             ))
           ) : (
             <span className="col-span-4 text-zinc-500">…</span>
@@ -56,11 +53,11 @@ export default function ProtocolPage() {
         <Card title="Refusal classes" hint="the contract never patches its failure text">
           <ul className="space-y-2 text-xs">
             {ERROR_LEGEND.map((l) => (
-              <li key={l.code} className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2">
+              <li key={l.code} className="rounded-lg border border-zinc-800/70 bg-zinc-950/30 px-3.5 py-2.5 transition-colors hover:border-zinc-700/70">
                 <span className="font-mono text-rose-300">{l.code}</span>
                 <span className="ml-2 text-zinc-300">{l.label}</span>
                 {catalog?.[l.code] && (
-                  <div className="mt-1 text-[10px] text-zinc-500">{catalog[l.code]}</div>
+                  <div className="mt-1 text-[10px] leading-relaxed text-zinc-600">{catalog[l.code]}</div>
                 )}
               </li>
             ))}
@@ -69,7 +66,7 @@ export default function ProtocolPage() {
 
         <div className="space-y-4">
           <Card title="Dimensions stored in the code" hint="this is the whole vocabulary">
-            <div className="space-y-3 text-xs">
+            <div className="space-y-3.5 text-xs">
               <Vocab label="outcomes" items={info?.outcomes} />
               <Vocab label="gate" items={info?.gates} />
               <Vocab label="authority kinds" items={info?.authority_kinds} />
@@ -89,16 +86,16 @@ export default function ProtocolPage() {
           </Card>
 
           <Card title="Where to look">
-            <div className="space-y-2 text-xs">
+            <div className="space-y-2.5 text-xs">
               <a
-                className="block font-mono text-emerald-400 hover:underline"
+                className="block break-all font-mono text-emerald-400 underline decoration-emerald-800 decoration-dotted underline-offset-4 transition-colors hover:text-emerald-300"
                 href={`${EXPLORER}/address/${CONTRACT_ADDRESS}`}
                 target="_blank" rel="noreferrer"
               >
                 explorer · {CONTRACT_ADDRESS}
               </a>
               <a
-                className="block font-mono text-emerald-400 hover:underline"
+                className="block break-all font-mono text-emerald-400 underline decoration-emerald-800 decoration-dotted underline-offset-4 transition-colors hover:text-emerald-300"
                 href="https://github.com/Afghanistan8/hatchmade"
                 target="_blank" rel="noreferrer"
               >
@@ -115,7 +112,7 @@ export default function ProtocolPage() {
 function Vocab({ label, items }: { label: string; items?: string[] }) {
   return (
     <div>
-      <div className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
+      <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">{label}</div>
       <div className="flex flex-wrap gap-1.5">
         {(items ?? []).map((i) => <Badge key={i}>{i}</Badge>)}
       </div>
