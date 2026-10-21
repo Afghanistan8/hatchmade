@@ -58,6 +58,15 @@ function parseJsonLoose(text) {
   }
 }
 
+// The CLI prints JS-style objects (single quotes), so structure is read by
+// targeted extraction and every address is proven with a real view call.
+function extractContractAddress(text) {
+  const direct =
+    text.match(/contract_address['"]?\s*[:=]\s*'?(0x[0-9a-fA-F]{40})'?/) ||
+    text.match(/to_address['"]?\s*[:=]\s*'?(0x[0-9a-fA-F]{40})'?/);
+  return direct ? direct[1] : null;
+}
+
 async function main() {
   // -- chain guard: only studionet ever gets this code ----------------------
   const chainHex = await rpc("eth_chainId");
@@ -118,11 +127,8 @@ async function main() {
   }
 
   // -- locate the contract address --------------------------------------------
-  let address =
-    (waitReceipt && (waitReceipt.contract_address || waitReceipt.contract)) ||
-    JSON.stringify(waitReceipt || {}).match(/0x[0-9a-fA-F]{40}/)?.[0] ||
-    deployed.out.match(/0x[0-9a-fA-F]{40}/)?.[0] ||
-    waited.out.match(/0x[0-9a-fA-F]{40}/)?.[0];
+  const fullBlob = deployed.out + "\n" + deployed.err + "\n" + waited.out + "\n" + waited.err;
+  let address = extractContractAddress(JSON.stringify(waitReceipt || {}) + fullBlob);
   if (!address) {
     console.error("[HATCHMADE-DEPLOY] could not find the contract address in the receipt:\n" + waited.out.slice(0, 2000));
     process.exit(17);
@@ -130,9 +136,15 @@ async function main() {
   address = address.toLowerCase();
   console.log(`[deploy] contract ${address}`);
 
-  // -- verify from the outside: the deployer holder must be recorded, the
-  //    protocol view must answer, and the deployed source must match -----------
-  const schema = cli(["call", address, "get_contract_schema_for_code", "--rpc", RPC]);
+  // -- prove it: the deployed gate must answer the protocol view ---------------
+  const proof = cli(["call", address, "get_protocol_info", "--rpc", RPC]);
+  if (proof.code !== 0 || !/hatchmade-gate-1/.test(proof.out)) {
+    console.error("[HATCHMADE-DEPLOY] the contract address does not answer " +
+      "get_protocol_info with these rules; refusing to write a manifest.\n" +
+      proof.out.slice(0, 800) + proof.err.slice(0, 200));
+    process.exit(18);
+  }
+  console.log("[deploy] get_protocol_info answered with hatchmade-gate-1");
   const code = cli(["code", address, "--rpc", RPC]);
   const deployed_code = code.out;
   const deployed_sha256 = sha256(Buffer.from(deployed_code, "utf8"));

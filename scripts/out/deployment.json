@@ -1,0 +1,17 @@
+{
+  "protocol": "hatchmade",
+  "network": "https://studio.genlayer.com/api",
+  "chain_id": 61999,
+  "runner_pin": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
+  "contract_address": "0xc1a79f5c729199561ce2eef06309b833193bf3b9",
+  "deploy_tx": "0x0354ae04fa248f0ef6f8170f3c729ea3e8873af28602ae843f4fa50fba640a42",
+  "deployed_at": "2026-10-21T05:52:03.119Z",
+  "source_sha256": "e8bec9b3ae189e40f38fc1368e1efa14903161b3fec29140eb15299ec00cb7f0",
+  "deployed_code_sha256": "ea654f535849390568bd90b7667c4ea1433f2efdf8df6da9fff50c73ef91e379",
+  "notes": [
+    "source_sha256 hashes contracts/hatchmade.py as committed (LF).",
+    "deployed_code_sha256 hashes the bytes `genlayer code` returns (terminal capture adds trailing newlines; content is byte-identical modulo trailing whitespace: 9afbce4afbb5c5666cb834e684880f64b6c89e4ef3fe1661503f9ec381bda18a over trimmed bytes).",
+    "Verified on chain: get_protocol_info answers with rules hatchmade-gate-1.",
+    "Deployed by the unlocked CLI deployer 0x4184bc5e5444f250767e8d33a49817a9b4fb0df3."
+  ]
+}
