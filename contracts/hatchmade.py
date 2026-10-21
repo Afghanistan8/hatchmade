@@ -347,12 +347,18 @@ def _url_parts(url: str) -> dict:
     for ch in text:
         if ord(ch) < 32 or ord(ch) == 127:
             _fail("the url carries a control character", E_URL)
-    if "@" in text:
+    # Userinfo (`user@host`) is only meaningful in the authority section, the
+    # part before the first slash. A version marker in a path, as in
+    # `gh/user/repo@main/fixtures/doc.txt`, is ordinary addressing.
+    authority = text[len("https://"):].split("/", 1)[0]
+    if not authority:
+        _fail("the url does not name a host", E_URL)
+    if "@" in authority:
         _fail("a url with userinfo is not a url this contract fetches", E_URL)
+    if ":" in authority:
+        _fail("a url with a port is not one this contract fetches", E_URL)
     if "#" in text:
         _fail("a url with a fragment does not name one place", E_URL)
-    if ":" in text[len("https://"):].split("/", 1)[0]:
-        _fail("a url with a port is not one this contract fetches", E_URL)
     if not URL_RE.match(text):
         _fail("the url must be https, carry a hostname and a path "
               "(no port, no userinfo, no fragment)", E_URL)

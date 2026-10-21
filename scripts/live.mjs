@@ -139,15 +139,14 @@ function writeTx(contract, method, args) {
     "--retries", String(wait_defaults.retries),
     "--rpc", RPC]);
   const waitReceipt = parseJsonLoose(waited.out + "\n" + waited.err) || {};
-  // Failure detection runs over BOTH the receipt JSON and the raw CLI text
-  // (the CLI prints JS literals, so error markers come in single quotes).
-  const blob = (JSON.stringify(waitReceipt) + waited.out + waited.err)
-    .replace(/'/g, '"');
+  // Failure detection runs over the raw CLI text, whose object literals have
+  // bare keys and single-quoted values, so no quoting assumption is built in.
+  const blob = JSON.stringify(waitReceipt) + waited.out + waited.err;
   if (/CANCELED|UNDETERMINED/i.test(blob) && !/FINALIZED/.test(blob)) {
     fail(method, `tx ${tx} did not settle: ${blob.slice(0, 400)}`);
   }
-  if (/"execution_result":\s*"ERROR"/i.test(blob)) {
-    const refusal = blob.match(/\[(?:[A-Z_]+)\][^"\\]{0,160}/);
+  if (/execution_result['\"]?\s*:\s*['\"]?ERROR/i.test(blob)) {
+    const refusal = blob.match(/\[(?:[A-Z_]{2,}\])[^'\"\\]{0,160}/);
     fail(method,
       `tx ${tx} was refused by the contract${refusal ? `: ${refusal[0]}` : " (execution error)"}`);
   }

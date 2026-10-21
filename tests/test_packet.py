@@ -106,6 +106,20 @@ def test_pin_kind_follows_the_authority(vm, contract, operator):
     assert contract.get_source(sid_ok)["kind"] == "MANUFACTURER"
 
 
+def test_version_marker_in_the_path_is_ordinary_addressing(
+        vm, contract, operator):
+    """`repo@main` style paths are fine; userinfo (`user@host`) is not."""
+    vm.sender = operator
+    H.register_authorities(contract)
+    cid = contract.open_case("Aero-Puck", "LOT-9751")
+    url = "https://docs.example.com/gh/user@v1.2/fixtures/notice.txt"
+    contract.register_authority("docs.example.com", "MANUFACTURER", "versioned")
+    sid = contract.pin_source(cid, url, H.NOTICE)
+    assert contract.get_source(sid)["host"] == "docs.example.com"
+    with vm.expect_revert("[URL_REJECTED]"):
+        contract.pin_source(cid, "https://user@docs.example.com/n.txt", H.NOTICE)
+
+
 def test_max_sources_ceiling(vm, contract, operator):
     vm.sender = operator
     H.register_authorities(contract)
