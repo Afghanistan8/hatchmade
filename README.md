@@ -44,7 +44,7 @@ Three sentences about what this refuses to be:
 
 Deployed on **GenLayer Studionet** (chain `61999`, RPC
 `https://studio.genlayer.com/api`), contract
-[`0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B`](https://explorer-studio.genlayer.com/address/0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B).
+[`0xF0B8cDe8E1d3677c88296E591eCd0b917214043B`](https://explorer-studio.genlayer.com/address/0xF0B8cDe8E1d3677c88296E591eCd0b917214043B).
 Deployment history, including an abandoned first address and why, is in
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 

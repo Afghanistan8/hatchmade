@@ -9,11 +9,11 @@ export const CHAIN_NAME = "GenLayer Studionet";
 export const CURRENCY = { name: "GEN", symbol: "GEN", decimals: 18 };
 export const EXPLORER = "https://explorer-studio.genlayer.com";
 
-// Deployed 2026-10-21 (scripts/out/deployment.json). Override with
+// Deployed 2026-10-22 (scripts/out/deployment.json). Override with
 // NEXT_PUBLIC_HATCHMADE_CONTRACT if the gate is redeployed.
 export const CONTRACT_ADDRESS = (
   process.env.NEXT_PUBLIC_HATCHMADE_CONTRACT ||
-  "0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B"
+  "0xF0B8cDe8E1d3677c88296E591eCd0b917214043B"
 ) as `0x${string}`;
 
 export const FIXTURE_BASE = "https://github.com/Afghanistan8/hatchmade/tree/main/fixtures";

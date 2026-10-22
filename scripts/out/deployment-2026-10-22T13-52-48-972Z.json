@@ -1,0 +1,11 @@
+{
+  "protocol": "hatchmade",
+  "network": "https://studio.genlayer.com/api",
+  "chain_id": 61999,
+  "runner_pin": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
+  "contract_address": "0xF0B8cDe8E1d3677c88296E591eCd0b917214043B",
+  "deploy_tx": "0x323537fef77965b19b7c81824e8fa33494af5e9895828e8e842a053265abcf4e",
+  "deployed_at": "2026-10-22T13:52:48.971Z",
+  "source_sha256": "57ef9b8fc82d76abdfddd8db9917363ba865c7516d842c335fce12b4f474b184",
+  "deployed_code_sha256": "8a1391a8d29c938009014df5a1b7c9e82f26953d582960d11ac9efe176f08109"
+}

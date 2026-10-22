@@ -44,12 +44,12 @@ anyone else's.
 
 | field                | value                                                    |
 |----------------------|----------------------------------------------------------|
-| contract             | `0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B`             |
-| deploy tx            | `0xa55ba447a26743f74bf6a2c4d093878cb65545b4ebebeb1d25e60f03ff8e1c7c` |
-| deployed at          | 2026-10-21T06:18:18.797Z                                 |
+| contract             | `0xF0B8cDe8E1d3677c88296E591eCd0b917214043B`             |
+| deploy tx            | `0x323537fef77965b19b7c81824e8fa33494af5e9895828e8e842a053265abcf4e` |
+| deployed at          | 2026-10-22T13:52:48.971Z                                 |
 | rules / schema       | `hatchmade-gate-1` / `hatchmade.evidence-gate@1`          |
-| source sha256        | `969eac339a4848cd2fc57e21724fbf4fd65a34d7a3b98fd6afd11bf5f29d0c7a` |
-| deployed code sha256 | `cde36f7619155215b47f2820de778e5511961014023b818a8906af282aeff3f3` |
+| source sha256        | `57ef9b8fc82d76abdfddd8db9917363ba865c7516d842c335fce12b4f474b184` |
+| deployed code sha256 | `8a1391a8d29c938009014df5a1b7c9e82f26953d582960d11ac9efe176f08109` |
 
 The canonical machine record lives in `scripts/out/deployment.json`
 (committed), including abandonment history.
@@ -68,7 +68,8 @@ The canonical machine record lives in `scripts/out/deployment.json`
   (userinfo banned in the authority section only), not a mutation: there
   is nothing mutable about a Hatchmade deployment — no upgrade, no owner,
   no admin (R-OWN-1). No protocol state of value existed on it.
-- `0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B` — current.
+- `0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B` — superseded after steward review found that leader display data could affect settlement even though the decision digest was agreed. The replacement reconstructs floors and outcome only from validator-agreed decisions and frozen packet flags.
+- `0xF0B8cDe8E1d3677c88296E591eCd0b917214043B` — current.
 
 ## Deploy / verify
 
@@ -77,7 +78,7 @@ The canonical machine record lives in `scripts/out/deployment.json`
 
 The deploy script refuses to finish unless `get_protocol_info` answers
 with `hatchmade-gate-1`. Watch the contract on the explorer:
-https://explorer-studio.genlayer.com/address/0x7a88389Bd7c340D48Dc1802Ac32Ea6b7E652133B
+https://explorer-studio.genlayer.com/address/0xF0B8cDe8E1d3677c88296E591eCd0b917214043B
 
 ## The Studionet read rate limit, and how the run gets past it
 
