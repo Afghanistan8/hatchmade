@@ -6,7 +6,8 @@
 //                      [[source_id, url, kind, host, pinned_sha256, byte_len], ...]
 //                      in pin order (the order stored in the packet)
 //   decision digest    sha256 over the canon of the decision rows
-//                      [[source_id, fetch_ok, digest_match, effective], ...]
+//                      [[source_id, fetch_ok, http_status, live_len,
+//                        digest_match, effective, reader_floor], ...]
 //                      sorted by source_id
 
 const encoder = new TextEncoder();
@@ -60,8 +61,11 @@ export async function packetDigest(sources: PacketSource[]): Promise<string> {
 export type Decision = {
   source_id: string;
   fetch_ok: boolean | number;
+  http_status: number | string;
+  live_len: number | string;
   digest_match: boolean | number;
   effective: string;
+  reader_floor: string;
 };
 
 export async function decisionDigest(decisions: Decision[]): Promise<string> {
@@ -69,8 +73,11 @@ export async function decisionDigest(decisions: Decision[]): Promise<string> {
     .map((d) => [
       d.source_id,
       Number(d.fetch_ok),
+      Number(d.http_status),
+      Number(d.live_len),
       Number(d.digest_match),
       d.effective,
+      d.reader_floor,
     ])
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   return sha256Hex(canon(rows));

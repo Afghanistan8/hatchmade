@@ -1,5 +1,6 @@
 """Assessment: the request/exercise split, outcomes, floors, and agreement."""
 
+import copy
 import json
 
 import pytest
@@ -15,8 +16,9 @@ def floor_names(record):
 def decision_digest_of(record):
     """Independently recomputed: the test mirrors the protocol, not the code."""
     rows = sorted(
-        [[d["source_id"], int(d["fetch_ok"]), int(d["digest_match"]),
-          d["effective"]] for d in record["decisions"]],
+        [[d["source_id"], int(d["fetch_ok"]), int(d["http_status"]),
+          int(d["live_len"]), int(d["digest_match"]), d["effective"],
+          d["reader_floor"]] for d in record["decisions"]],
         key=lambda r: r[0])
     return H.sha256_hex(json.dumps(rows, sort_keys=True, separators=(",", ":")))
 
@@ -336,3 +338,55 @@ def test_validator_never_rubber_stamps_a_failed_leader(vm, contract, operator):
     contract.execute_assessment(aid)
     assert vm.run_validator(index=-1, leader_error=RuntimeError("wire down")) \
         is False
+
+
+def _forged_display_clear(leader_fn, _validator_fn):
+    """Return honest signed decisions with forged leader-only display rows."""
+    agreed = copy.deepcopy(leader_fn())
+    for row in agreed["rows"]:
+        if row["kind"] == "REGULATOR":
+            row["effective"] = "NOT_RECALLED"
+            row["reading"] = {
+                "source_id": row["source_id"], "result": "NOT_RECALLED",
+                "basis": "forged leader display", "recall_titles": [],
+                "note": "forged", "held": False, "grounded": True,
+                "effective": "NOT_RECALLED",
+            }
+    agreed["judgments"] = [
+        dict(row["reading"]) for row in agreed["rows"]
+        if row["kind"] == "REGULATOR"
+    ]
+    # `decisions` and its digest are deliberately untouched: these are the
+    # rows validators actually agreed, unlike the forged display payload.
+    return agreed
+
+
+def test_forged_leader_display_cannot_clear_agreed_recall(
+        vm, contract, operator, monkeypatch):
+    """Direct Mode regression: agreed RECALLED always settles QUARANTINE."""
+    import genlayer.gl.vm as gl_vm
+
+    vm.sender = operator
+    cid, _ = H.standard_case(
+        contract, vm, llm_reply=H.recall_reply(H.PERMANENT_BULLETIN))
+    aid = contract.request_assessment(cid)
+    monkeypatch.setattr(gl_vm, "run_nondet_unsafe", _forged_display_clear)
+
+    assert contract.execute_assessment(aid) == "QUARANTINE"
+    assert contract.get_case(cid)["settled_outcome"] == "QUARANTINE"
+
+
+def test_forged_leader_display_cannot_clear_agreed_review(
+        vm, contract, operator, monkeypatch):
+    """Direct Mode regression: an agreed digest mismatch always settles REVIEW."""
+    import genlayer.gl.vm as gl_vm
+
+    vm.sender = operator
+    cid, _ = H.standard_case(
+        contract, vm, llm_reply=H.recall_reply(H.PERMANENT_BULLETIN))
+    H.mock_web(vm, [(H.URL_LOGISTICS, 200, H.MANIFEST_OTHER_LOT)])
+    aid = contract.request_assessment(cid)
+    monkeypatch.setattr(gl_vm, "run_nondet_unsafe", _forged_display_clear)
+
+    assert contract.execute_assessment(aid) == "REVIEW"
+    assert contract.get_case(cid)["settled_outcome"] == "REVIEW"

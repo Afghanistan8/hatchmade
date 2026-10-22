@@ -414,30 +414,34 @@ def _page(items: list, offset, limit) -> dict:
 # 3. the deterministic core
 # ---------------------------------------------------------------------------
 
-def _receipt_row(receipt: dict) -> list:
-    """The one line of one source's receipt, as the decision pins it.
+def _decision_row(decision: dict) -> list:
+    """The complete outcome-controlling line for one source.
 
     Booleans are written as ints so the canonical json cannot drift between
-    a node that writes true and one that writes 1. R-AGR-1.
+    a node that writes true and one that writes 1.  Transport facts and the
+    reader-floor code live here too: the final outcome must never depend on
+    a leader-only receipt or prose judgment. R-AGR-1, R-ASM-2.
     """
     return [
-        str(receipt["source_id"]),
-        int(receipt["fetch_ok"]),
-        int(receipt["digest_match"]),
-        str(receipt["effective"]),
+        str(decision["source_id"]),
+        int(decision["fetch_ok"]),
+        int(decision["http_status"]),
+        int(decision["live_len"]),
+        int(decision["digest_match"]),
+        str(decision["effective"]),
+        str(decision["reader_floor"]),
     ]
 
 
-def decision_digest(receipts: list) -> str:
+def decision_digest(decisions: list) -> str:
     """What the validators have to agree on, and nothing else.
 
-    Whether each source fetched, whether its live bytes match what the case
-    pinned, and the effective status the reader assigned to each regulator
-    source. The wording of a quotation and a basis sentence are left out:
-    two honest readers never cite the same words, and holding the prose
-    decisive would fail every round while making nothing safer. R-AGR-2.
+    Each source's transport result, byte-match result, effective regulator
+    status and reader-floor code are agreed. The wording of a quotation and
+    basis sentence are left out: two honest readers never cite the same
+    prose, and prose is not outcome-controlling. R-AGR-2.
     """
-    rows = sorted([_receipt_row(r) for r in receipts],
+    rows = sorted([_decision_row(d) for d in decisions],
                   key=lambda row: row[0])
     return _digest(rows)
 
@@ -536,6 +540,87 @@ def _outcome_of(judgments: list, floors: list) -> str:
     if any(s == J_UNCERTAIN for s in statuses):
         return O_REVIEW
     return O_CLEAR
+
+
+def _agreed_decisions(decisions: list, sources: list) -> list:
+    """Validate and normalize exactly the rows validators signed.
+
+    This closes the leader-data split: a decision digest is useful only if
+    every field used later to calibrate the gate is inside it and matched to
+    the frozen source inventory. R-AGR-2.
+    """
+    if not isinstance(decisions, list) or len(decisions) != len(sources):
+        _fail("the agreed decision rows do not cover the frozen packet", E_PANEL)
+    source_by_id = {str(s["source_id"]): s for s in sources}
+    normalized = []
+    seen = set()
+    for raw in decisions:
+        if not isinstance(raw, dict):
+            _fail("an agreed decision is not an object", E_PANEL)
+        sid = str(raw.get("source_id") or "")
+        source = source_by_id.get(sid)
+        if not source or sid in seen:
+            _fail("an agreed decision does not name one frozen source", E_PANEL)
+        seen.add(sid)
+        try:
+            fetch_ok = int(raw.get("fetch_ok"))
+            http_status = int(raw.get("http_status"))
+            live_len = int(raw.get("live_len"))
+            digest_match = int(raw.get("digest_match"))
+        except (TypeError, ValueError):
+            _fail("an agreed transport decision is malformed", E_PANEL)
+        effective = str(raw.get("effective") or "")
+        reader_floor = str(raw.get("reader_floor") or "")
+        if fetch_ok not in (0, 1) or digest_match not in (0, 1):
+            _fail("an agreed transport decision is not boolean", E_PANEL)
+        if http_status < 0 or live_len < 0:
+            _fail("an agreed transport decision is negative", E_PANEL)
+        if source["kind"] == K_REGULATOR:
+            if effective not in J_RESULTS:
+                _fail("an agreed regulator status is invalid", E_PANEL)
+            if reader_floor not in ("", "MODEL_READ", "GROUNDING_HELD"):
+                _fail("an agreed reader floor is invalid", E_PANEL)
+            if reader_floor and effective != J_UNCERTAIN:
+                _fail("an agreed reader floor does not hold its reading", E_PANEL)
+        elif effective != "-" or reader_floor:
+            _fail("a non-regulator carried a reader decision", E_PANEL)
+        normalized.append({
+            "source_id": sid, "fetch_ok": fetch_ok,
+            "http_status": http_status, "live_len": live_len,
+            "digest_match": digest_match, "effective": effective,
+            "reader_floor": reader_floor,
+        })
+    return normalized
+
+
+def _settle_agreed_decisions(decisions: list, sources: list,
+                              packet_flags: list) -> tuple[list, str]:
+    """Deterministically reconstruct floors and outcome from signed rows."""
+    by_id = {d["source_id"]: d for d in decisions}
+    floors = []
+    regulator_statuses = []
+    for source in sources:
+        decision = by_id[source["source_id"]]
+        if not decision["fetch_ok"] or decision["http_status"] != 200:
+            floors.append({"floor": "FETCH_STATUS", "detail": source["source_id"]})
+        else:
+            if decision["live_len"] == 0:
+                floors.append({"floor": "NO_LIVE_BYTES", "detail": source["source_id"]})
+            if not decision["digest_match"]:
+                floors.append({"floor": "DIGEST_MISMATCH", "detail": source["source_id"]})
+        if source["kind"] == K_REGULATOR:
+            regulator_statuses.append(decision["effective"])
+            if decision["reader_floor"]:
+                floors.append({"floor": decision["reader_floor"],
+                               "detail": source["source_id"]})
+    for flag in packet_flags:
+        floors.append({"floor": f"INJECTION_{flag.get('signal') or 'UNKNOWN'}",
+                       "detail": flag.get("excerpt") or ""})
+    if floors or J_UNCERTAIN in regulator_statuses:
+        return floors, O_REVIEW
+    if J_RECALLED in regulator_statuses:
+        return floors, O_QUARANTINE
+    return floors, O_CLEAR
 
 
 def worse_of(a: str, b: str) -> str:
@@ -1159,8 +1244,14 @@ class Hatchmade(gl.Contract):
             decisions = [
                 {"source_id": row["source_id"],
                  "fetch_ok": int(row["fetch_ok"]),
+                 "http_status": int(row["http_status"]),
+                 "live_len": int(row["live_len"]),
                  "digest_match": int(row["digest_match"]),
-                 "effective": row["effective"]}
+                 "effective": row["effective"],
+                 "reader_floor": (
+                     "MODEL_READ" if row.get("reading", {}).get("invalid")
+                     else "GROUNDING_HELD" if row.get("reading", {}).get("held")
+                     else "")}
                 for row in rows
             ]
             return {
@@ -1203,19 +1294,18 @@ class Hatchmade(gl.Contract):
         # -- the agreed value is checked again before a byte is written ----
         receipts = agreed.get("rows")
         judgments = agreed.get("judgments")
-        decisions = agreed.get("decisions")
-        if not (isinstance(receipts, list) and isinstance(judgments, list)
-                and isinstance(decisions, list)):
+        if not (isinstance(receipts, list) and isinstance(judgments, list)):
             _fail("the agreed answer is not shaped like a reading", E_PANEL)
-        known = {s["source_id"] for s in sources}
-        if any(r.get("source_id") not in known for r in receipts):
-            _fail("a receipt names a source this case does not have", E_PANEL)
+        decisions = _agreed_decisions(agreed.get("decisions"), sources)
         if decision_digest(decisions) != str(agreed.get("decision_digest") or ""):
             _fail("the agreed decisions do not recompose the digest that "
                   "was signed", E_PANEL)
 
-        floors = _floors(receipts, judgments, packet_flags)
-        outcome = _outcome_of(judgments, floors)
+        # Do not calibrate from rows/judgments: they are human-readable
+        # leader payloads. Floors and outcome are reconstructed solely from
+        # the validator-agreed decision rows plus frozen packet flags.
+        floors, outcome = _settle_agreed_decisions(
+            decisions, sources, packet_flags)
 
         # -- everything is written after the round agreed --------------------
         record = {

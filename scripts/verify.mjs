@@ -148,7 +148,11 @@ async function main() {
         continue;
       }
       const decision_rows = [...(sheetRow.decisions || [])]
-        .map((d) => [d.source_id, Number(d.fetch_ok), Number(d.digest_match), d.effective])
+        .map((d) => [
+          d.source_id, Number(d.fetch_ok), Number(d.http_status),
+          Number(d.live_len), Number(d.digest_match), d.effective,
+          d.reader_floor,
+        ])
         .sort((a, b) => (a[0] < b[0] ? -1 : 1));
       const decision_digest = sha256(canonSorted(decision_rows));
       const ok = decision_digest === sheetRow.decision_digest;

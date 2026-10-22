@@ -96,7 +96,10 @@ better in every merge (R-CAL-2).
   reading and signs only when the decisions agree exactly (R-AGR-2).
   Nothing is written until the round agrees, and the deterministic floors
   (R-FLO-1) then turn the agreed decisions into an outcome that is
-  *recorded, never asserted*.
+  *recorded, never asserted*. Transport status, live length, digest match,
+  regulator effective status and reader-floor code are all decision fields;
+  leader receipts and prose judgments are display evidence only and cannot
+  influence the outcome.
 - **R-ASM-3** — *One nondeterminism region.* All network and model calls
   live inside the runner's single nondeterministic block, written inline so
   both the runtime and the tests see the entire block as one function. Wire
@@ -182,8 +185,9 @@ better in every merge (R-CAL-2).
   drift between a node that writes `true` and one that writes `1`.
 - **R-AGR-2** — *Agree on decisions, not on prose.* Validators sign only
   when the per-source decisions are **exactly** what the leader's were —
-  fetched-or-not (int), matched-or-not (int), effective reading per
-  regulator source. The wording of a quotation and the basis sentence are
+  fetched-or-not (int), HTTP status, live length, matched-or-not (int),
+  effective reading per regulator source, and reader-floor code. The wording
+  of a quotation and the basis sentence are
   deliberately left out: two honest readers never cite the same words, and
   holding the prose decisive would fail every round while making nothing
   safer.
@@ -281,7 +285,8 @@ assessment rounds, and a 100-item page. A value at a ceiling is refused with
   `[[source_id, url, kind, host, pinned_sha256, byte_len], ...]` in pin
   order, stored at seal as `packet_sha256`.
 - **decision digest** — sha256 over the canon of
-  `[[source_id, fetch_ok(int), digest_match(int), effective], ...]`
+  `[[source_id, fetch_ok(int), http_status, live_len, digest_match(int),
+  effective, reader_floor], ...]`
   sorted by `source_id`, stored per finalized assessment as
   `decision_digest`.
 

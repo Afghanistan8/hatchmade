@@ -53,8 +53,9 @@ carries its own reasons (R-GATE-2).
 - **packet digest** — canon of `[[source_id, url, kind, host, pinned_sha256,
   byte_len], ...]` in pin order; computed once at seal, attached to every
   later request and assessment (`packet_sha256`, R-FRZ-1).
-- **decision digest** — canon of `[[source_id, fetch_ok(int),
-  digest_match(int), effective], ...]` sorted by `source_id`; the exact
+- **decision digest** — canon of `[[source_id, fetch_ok(int), http_status,
+  live_len, digest_match(int), effective, reader_floor], ...]` sorted by
+  `source_id`; the exact
   thing the panel agrees on (R-AGR-2), stored per finalized assessment
   (`decision_digest`).
 
